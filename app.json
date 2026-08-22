@@ -3,6 +3,7 @@
     "name": "virapedal",
     "slug": "virapedal",
     "version": "1.0.0",
+    "scheme": "virapedal",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -20,6 +21,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-splash-screen"
+    ]
   }
 }

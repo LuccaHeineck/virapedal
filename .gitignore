@@ -40,6 +40,9 @@ yarn-error.*
 /ios
 /android
 .env
+.env.local
 AGENTS.md
 CLAUDE.md
 /.agents
+.claude/
+skills-lock.json
