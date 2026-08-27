@@ -13,6 +13,7 @@ export default function AppLayout() {
           ),
         }}
       />
+
       <Tabs.Screen
         name="profile"
         options={{
@@ -22,15 +23,15 @@ export default function AppLayout() {
           ),
         }}
       />
+
       <Tabs.Screen
         name="events"
         options={{
+          href: null,
           title: 'Eventos',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'bicycle' : 'bicycle-outline'} color={color} size={size} />
-          ),
         }}
       />
+
       <Tabs.Screen
         name="create-event"
         options={{
