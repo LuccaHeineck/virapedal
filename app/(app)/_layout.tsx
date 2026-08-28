@@ -15,28 +15,25 @@ export default function AppLayout() {
       />
 
       <Tabs.Screen
+        name="groups"
+        options={{
+          title: 'Grupos',
+          // A pilha aninhada em app/(app)/groups/_layout.tsx tem seu próprio
+          // cabeçalho por tela — sem isso, o cabeçalho das Tabs (deste nível)
+          // aparece empilhado em cima do dela.
+          headerShown: false,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'people' : 'people-outline'} color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Perfil',
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? 'person' : 'person-outline'} color={color} size={size} />
           ),
-        }}
-      />
-
-      <Tabs.Screen
-        name="events"
-        options={{
-          href: null,
-          title: 'Eventos',
-        }}
-      />
-
-      <Tabs.Screen
-        name="create-event"
-        options={{
-          href: null,
-          title: 'Criar Evento',
         }}
       />
     </Tabs>
