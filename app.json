@@ -25,7 +25,13 @@
     "plugins": [
       "expo-router",
       "expo-status-bar",
-      "expo-splash-screen"
+      "expo-splash-screen",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O Virapedal usa suas fotos para definir a imagem de capa de um grupo."
+        }
+      ]
     ]
   }
 }

@@ -9,6 +9,7 @@
     "@supabase/supabase-js": "^2.112.3",
     "expo": "~57.0.15",
     "expo-constants": "~57.0.13",
+    "expo-image-picker": "~57.0.14",
     "expo-linking": "~57.0.7",
     "expo-router": "~57.0.15",
     "expo-splash-screen": "~57.0.7",
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "supabase": "^2.116.0",
     "typescript": "~6.0.3"
   },
   "scripts": {
