@@ -26,6 +26,18 @@ export default function AppLayout() {
             <Ionicons name={focused ? 'people' : 'people-outline'} color={color} size={size} />
           ),
         }}
+        // Um link para um pedal aberto a partir da aba Início empurra aquela
+        // tela para dentro da pilha desta aba (a rota mora em
+        // app/(app)/groups/...). Sem isto, tocar no botão "Grupos" só troca
+        // de aba mostrando o que ficou no topo dessa pilha -- o pedal, não a
+        // lista de grupos. Forçar o destino para "index" a cada toque
+        // garante que este botão sempre volte à lista de grupos.
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            e.preventDefault();
+            navigation.navigate('groups', { screen: 'index' });
+          },
+        })}
       />
       <Tabs.Screen
         name="profile"
