@@ -3,7 +3,7 @@ import { Stack, useRouter } from 'expo-router';
 import { TouchableOpacity } from 'react-native';
 
 // um reload monta a tela sozinha sem o index, ai nao tinha pra onde voltar, agora tem
-export const unstable_setting = {
+export const unstable_settings = {
   initialRouteName: 'index',
 }
 
