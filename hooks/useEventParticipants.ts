@@ -14,7 +14,11 @@ export type EventParticipant = {
   users: { name: string; profile_photo_url: string | null } | null;
 };
 
-const PARTICIPANT_COLUMNS = 'id, event_id, user_id, guest_name, status, users(name, profile_photo_url)';
+// event_participants tem duas FKs para users (user_id e added_by) -- sem
+// desambiguar, o PostgREST recusa o embed com "more than one relationship
+// was found" (PGRST201).
+const PARTICIPANT_COLUMNS =
+  'id, event_id, user_id, guest_name, status, users!event_participants_user_id_fkey(name, profile_photo_url)';
 
 const GENERIC_LOAD_ERROR = 'Não foi possível carregar os participantes. Tente novamente.';
 const GENERIC_JOIN_ERROR = 'Não foi possível confirmar sua presença. Tente novamente.';
