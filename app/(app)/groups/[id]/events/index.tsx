@@ -80,7 +80,6 @@ export default function GroupEventsFeed() {
                   {formatDate(item.event_date)} às {formatTime(item.start_time)}
                 </Text>
                 {item.meeting_point ? <Text style={styles.eventMeta}>Ponto de encontro: {item.meeting_point}</Text> : null}
-                {item.description ? <Text style={styles.eventDescription}>{item.description}</Text> : null}
               </TouchableOpacity>
             </Link>
           )}
@@ -163,10 +162,5 @@ const styles = StyleSheet.create({
   eventMeta: {
     fontSize: 14,
     color: '#666',
-  },
-  eventDescription: {
-    fontSize: 14,
-    color: '#444',
-    marginTop: 2,
   },
 });
