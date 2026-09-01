@@ -64,23 +64,25 @@ export default function GroupEventsFeed() {
           contentContainerStyle={styles.listContent}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           renderItem={({ item }) => (
-            <View style={styles.eventRow}>
-              <View style={styles.eventHeader}>
-                <Text style={styles.eventTitle} numberOfLines={1}>
-                  {item.title}
+            <Link href={`/groups/${groupId}/events/${item.id}`} asChild>
+              <TouchableOpacity style={styles.eventRow}>
+                <View style={styles.eventHeader}>
+                  <Text style={styles.eventTitle} numberOfLines={1}>
+                    {item.title}
+                  </Text>
+                  {item.status !== 'scheduled' ? (
+                    <View style={styles.statusBadge}>
+                      <Text style={styles.statusText}>{STATUS_LABELS[item.status]}</Text>
+                    </View>
+                  ) : null}
+                </View>
+                <Text style={styles.eventMeta}>
+                  {formatDate(item.event_date)} às {formatTime(item.start_time)}
                 </Text>
-                {item.status !== 'scheduled' ? (
-                  <View style={styles.statusBadge}>
-                    <Text style={styles.statusText}>{STATUS_LABELS[item.status]}</Text>
-                  </View>
-                ) : null}
-              </View>
-              <Text style={styles.eventMeta}>
-                {formatDate(item.event_date)} às {formatTime(item.start_time)}
-              </Text>
-              {item.meeting_point ? <Text style={styles.eventMeta}>Ponto de encontro: {item.meeting_point}</Text> : null}
-              {item.description ? <Text style={styles.eventDescription}>{item.description}</Text> : null}
-            </View>
+                {item.meeting_point ? <Text style={styles.eventMeta}>Ponto de encontro: {item.meeting_point}</Text> : null}
+                {item.description ? <Text style={styles.eventDescription}>{item.description}</Text> : null}
+              </TouchableOpacity>
+            </Link>
           )}
           ListEmptyComponent={
             <View style={styles.centered}>

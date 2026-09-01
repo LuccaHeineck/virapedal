@@ -46,7 +46,7 @@ export default function Home() {
           contentContainerStyle={styles.listContent}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           renderItem={({ item }) => (
-            <Link href={`/groups/${item.group_id}/events`} asChild>
+            <Link href={`/groups/${item.group_id}/events/${item.id}`} asChild>
               <TouchableOpacity style={styles.eventRow}>
                 <Text style={styles.eventTitle} numberOfLines={1}>
                   {item.title}

@@ -20,7 +20,7 @@ export type GroupEvent = {
   updated_at: string;
 };
 
-const EVENT_COLUMNS =
+export const EVENT_COLUMNS =
   'id, group_id, created_by, title, description, event_date, start_time, meeting_point, route_description, status, created_at, updated_at';
 
 const GENERIC_LOAD_ERROR = 'Não foi possível carregar os pedais. Tente novamente.';
@@ -101,12 +101,27 @@ export function useGroupEvents(groupId: number) {
         .select('id')
         .single();
 
-      setSubmitting(false);
       if (insertError || !data) {
+        setSubmitting(false);
         setCreateError(GENERIC_CREATE_ERROR);
         return false;
       }
 
+      // Quem cria o pedal já entra como participante confirmado. Isto roda
+      // como um segundo INSERT (a policy de event_participants exige
+      // can_view_event(), que consulta a linha de events já commitada por
+      // este primeiro INSERT) -- não precisa de uma função atômica como
+      // create_group(), já que aqui não há bootstrap de permissão em jogo.
+      // Falha nesta segunda etapa não desfaz o pedal já criado; o próprio
+      // criador consegue entrar manualmente depois se isto falhar.
+      await supabase.from('event_participants').insert({
+        event_id: data.id,
+        user_id: userData.user.id,
+        status: 'confirmed',
+        confirmed_at: new Date().toISOString(),
+      });
+
+      setSubmitting(false);
       await fetchEvents();
       return true;
     },

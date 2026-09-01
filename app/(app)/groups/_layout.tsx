@@ -34,6 +34,8 @@ export default function GroupsLayout() {
       <Stack.Screen name="[id]/requests" options={{ title: 'Solicitações' }} />
       <Stack.Screen name="[id]/events/index" options={{ title: 'Pedais' }} />
       <Stack.Screen name="[id]/events/new" options={{ title: 'Novo pedal', presentation: 'modal' }} />
+      <Stack.Screen name="[id]/events/[eventId]/index" options={{ title: 'Pedal' }} />
+      <Stack.Screen name="[id]/events/[eventId]/edit" options={{ title: 'Editar pedal' }} />
     </Stack>
   );
 }
