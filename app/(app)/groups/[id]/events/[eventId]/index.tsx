@@ -1,6 +1,7 @@
-import { Link, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { Link, Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback } from 'react';
-import { FlatList, Image, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Button } from '../../../../../../components/Button';
 import { LoadingView } from '../../../../../../components/LoadingView';
 import { StatusText } from '../../../../../../components/StatusText';
@@ -47,9 +48,10 @@ function ParticipantRow({ participant }: { participant: EventParticipant }) {
 }
 
 export default function EventDetail() {
-  const { id, eventId } = useLocalSearchParams<{ id: string; eventId: string }>();
+  const { id, eventId, from } = useLocalSearchParams<{ id: string; eventId: string; from?: string }>();
   const groupId = Number(id);
   const numericEventId = Number(eventId);
+  const router = useRouter();
 
   const { user } = useAuth();
   const { membership } = useGroup(groupId);
@@ -72,15 +74,45 @@ export default function EventDetail() {
     }, [refreshEvent, refreshParticipants])
   );
 
+  // O header padrão do Stack sempre volta para "index" (lista de grupos) --
+  // efeito colateral do initialRouteName do _layout, necessário para o F5
+  // funcionar em rotas aninhadas, mas que quebra o "voltar" real quando esta
+  // tela é aberta a partir de outra aba (Início). Por isso a origem vem
+  // explícita via ?from= no link, e o botão de voltar é controlado aqui em
+  // vez de depender do histórico nativo da pilha.
+  const handleBack = useCallback(() => {
+    router.replace(from === 'home' ? '/' : `/groups/${groupId}/events`);
+  }, [router, from, groupId]);
+
+  const backButton = (
+    <Stack.Screen
+      options={{
+        headerLeft: () => (
+          <TouchableOpacity onPress={handleBack} hitSlop={8} accessibilityLabel="Voltar" accessibilityRole="button">
+            <Ionicons name="chevron-back" size={26} color={colors.primary} />
+          </TouchableOpacity>
+        ),
+      }}
+    />
+  );
+
   if (eventLoading) {
-    return <LoadingView />;
+    return (
+      <>
+        {backButton}
+        <LoadingView />
+      </>
+    );
   }
 
   if (eventError || !event) {
     return (
-      <View style={styles.centered}>
-        <StatusText variant="error">{eventError ?? 'Pedal não encontrado.'}</StatusText>
-      </View>
+      <>
+        {backButton}
+        <View style={styles.centered}>
+          <StatusText variant="error">{eventError ?? 'Pedal não encontrado.'}</StatusText>
+        </View>
+      </>
     );
   }
 
@@ -98,60 +130,63 @@ export default function EventDetail() {
   }
 
   return (
-    <FlatList
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      data={participants}
-      keyExtractor={(item) => String(item.id)}
-      renderItem={({ item }) => <ParticipantRow participant={item} />}
-      ListHeaderComponent={
-        <View style={styles.header}>
-          <View style={styles.titleRow}>
-            <Text style={styles.title}>{event.title}</Text>
-            {event.status !== 'scheduled' ? (
-              <View style={styles.statusBadge}>
-                <Text style={styles.statusText}>{STATUS_LABELS[event.status]}</Text>
-              </View>
+    <>
+      {backButton}
+      <FlatList
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        data={participants}
+        keyExtractor={(item) => String(item.id)}
+        renderItem={({ item }) => <ParticipantRow participant={item} />}
+        ListHeaderComponent={
+          <View style={styles.header}>
+            <View style={styles.titleRow}>
+              <Text style={styles.title}>{event.title}</Text>
+              {event.status !== 'scheduled' ? (
+                <View style={styles.statusBadge}>
+                  <Text style={styles.statusText}>{STATUS_LABELS[event.status]}</Text>
+                </View>
+              ) : null}
+            </View>
+
+            <Text style={styles.meta}>
+              {formatDate(event.event_date)} às {formatTime(event.start_time)} · {event.group_name}
+            </Text>
+            {event.meeting_point ? <Text style={styles.meta}>Ponto de encontro: {event.meeting_point}</Text> : null}
+            {event.route_description ? <Text style={styles.meta}>Percurso: {event.route_description}</Text> : null}
+            {event.description ? <Text style={styles.description}>{event.description}</Text> : null}
+            <Text style={styles.meta}>Criado por {event.creator_name}</Text>
+
+            {actionError ? <StatusText variant="error">{actionError}</StatusText> : null}
+
+            <Button
+              title={isParticipant || isCreator ? 'Sair' : 'Participar'}
+              variant={isParticipant || isCreator ? 'destructive' : 'primary'}
+              onPress={handleToggleParticipation}
+              disabled={isCreator}
+              loading={submitting}
+            />
+
+            {canEdit ? (
+              <Link href={`/groups/${groupId}/events/${numericEventId}/edit`} asChild>
+                <Button title="Editar pedal" variant="plain" onPress={() => {}} />
+              </Link>
             ) : null}
+
+            <Text style={styles.sectionTitle}>Participantes</Text>
+
+            {participantsError ? <StatusText variant="error">{participantsError}</StatusText> : null}
           </View>
-
-          <Text style={styles.meta}>
-            {formatDate(event.event_date)} às {formatTime(event.start_time)} · {event.group_name}
-          </Text>
-          {event.meeting_point ? <Text style={styles.meta}>Ponto de encontro: {event.meeting_point}</Text> : null}
-          {event.route_description ? <Text style={styles.meta}>Percurso: {event.route_description}</Text> : null}
-          {event.description ? <Text style={styles.description}>{event.description}</Text> : null}
-          <Text style={styles.meta}>Criado por {event.creator_name}</Text>
-
-          {actionError ? <StatusText variant="error">{actionError}</StatusText> : null}
-
-          <Button
-            title={isParticipant || isCreator ? 'Sair' : 'Participar'}
-            variant={isParticipant || isCreator ? 'destructive' : 'primary'}
-            onPress={handleToggleParticipation}
-            disabled={isCreator}
-            loading={submitting}
-          />
-
-          {canEdit ? (
-            <Link href={`/groups/${groupId}/events/${numericEventId}/edit`} asChild>
-              <Button title="Editar pedal" variant="plain" onPress={() => {}} />
-            </Link>
-          ) : null}
-
-          <Text style={styles.sectionTitle}>Participantes</Text>
-
-          {participantsError ? <StatusText variant="error">{participantsError}</StatusText> : null}
-        </View>
-      }
-      ListEmptyComponent={
-        participantsLoading ? null : (
-          <View style={styles.centered}>
-            <Text style={styles.emptyText}>Nenhum participante ainda.</Text>
-          </View>
-        )
-      }
-    />
+        }
+        ListEmptyComponent={
+          participantsLoading ? null : (
+            <View style={styles.centered}>
+              <Text style={styles.emptyText}>Nenhum participante ainda.</Text>
+            </View>
+          )
+        }
+      />
+    </>
   );
 }
 
