@@ -2,6 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import { TouchableOpacity } from 'react-native';
 
+// um reload monta a tela sozinha sem o index, ai nao tinha pra onde voltar, agora tem
+export const unstable_setting = {
+  initialRouteName: 'index',
+}
+
 export default function GroupsLayout() {
   const router = useRouter();
 
