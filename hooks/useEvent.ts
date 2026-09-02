@@ -25,6 +25,7 @@ const EVENT_DETAIL_COLUMNS = `${EVENT_COLUMNS}, groups(name), users:created_by(n
 
 const GENERIC_LOAD_ERROR = 'Não foi possível carregar o pedal. Tente novamente.';
 const GENERIC_SAVE_ERROR = 'Não foi possível salvar as alterações do pedal. Tente novamente.';
+const GENERIC_DELETE_ERROR = 'Não foi possível excluir o pedal. Tente novamente.';
 
 export type UpdateEventInput = Partial<{
   title: string;
@@ -42,6 +43,8 @@ export function useEvent(eventId: number) {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Ausência aqui é ambígua entre "pedal não existe" e "sem acesso ao grupo"
   // (mesmo caso do useGroup) -- o RLS de events filtra silenciosamente.
@@ -107,5 +110,33 @@ export function useEvent(eventId: number) {
     [eventId, fetchEvent]
   );
 
-  return { event, loading, error, refresh: fetchEvent, updateEvent, submitting, saveError };
+  // Sem policy de RLS de DELETE, event_participants/event_photos/routes/
+  // event_changes com ON DELETE CASCADE em events(id) já limpam sozinhos.
+  const deleteEvent = useCallback(async () => {
+    setDeleting(true);
+    setDeleteError(null);
+
+    const { error: deleteErrorResult } = await supabase.from('events').delete().eq('id', eventId);
+
+    setDeleting(false);
+    if (deleteErrorResult) {
+      setDeleteError(GENERIC_DELETE_ERROR);
+      return false;
+    }
+
+    return true;
+  }, [eventId]);
+
+  return {
+    event,
+    loading,
+    error,
+    refresh: fetchEvent,
+    updateEvent,
+    submitting,
+    saveError,
+    deleteEvent,
+    deleting,
+    deleteError,
+  };
 }

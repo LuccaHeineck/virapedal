@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Link, Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback } from 'react';
-import { FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Button } from '../../../../../../components/Button';
 import { LoadingView } from '../../../../../../components/LoadingView';
 import { StatusText } from '../../../../../../components/StatusText';
@@ -55,7 +55,15 @@ export default function EventDetail() {
 
   const { user } = useAuth();
   const { membership } = useGroup(groupId);
-  const { event, loading: eventLoading, error: eventError, refresh: refreshEvent } = useEvent(numericEventId);
+  const {
+    event,
+    loading: eventLoading,
+    error: eventError,
+    refresh: refreshEvent,
+    deleteEvent,
+    deleting,
+    deleteError,
+  } = useEvent(numericEventId);
   const {
     participants,
     loading: participantsLoading,
@@ -129,6 +137,32 @@ export default function EventDetail() {
     }
   }
 
+  async function confirmAndDelete() {
+    const ok = await deleteEvent();
+    if (ok) {
+      handleBack();
+    }
+  }
+
+  function handleDelete() {
+    const message = 'Tem certeza que deseja excluir este pedal? Esta ação não pode ser desfeita.';
+
+    // Alert.alert com múltiplos botões não é suportado de forma confiável no
+    // React Native Web (0.21) -- no navegador ele não exibe nada. window.confirm
+    // é o equivalente nativo do browser para esse caso.
+    if (Platform.OS === 'web') {
+      if (window.confirm(message)) {
+        confirmAndDelete();
+      }
+      return;
+    }
+
+    Alert.alert('Excluir pedal', message, [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Excluir', style: 'destructive', onPress: confirmAndDelete },
+    ]);
+  }
+
   return (
     <>
       {backButton}
@@ -172,6 +206,11 @@ export default function EventDetail() {
                 <Button title="Editar pedal" variant="plain" onPress={() => {}} />
               </Link>
             ) : null}
+
+            {canEdit ? (
+              <Button title="Excluir pedal" variant="destructive" onPress={handleDelete} loading={deleting} />
+            ) : null}
+            {deleteError ? <StatusText variant="error">{deleteError}</StatusText> : null}
 
             <Text style={styles.sectionTitle}>Participantes</Text>
 
