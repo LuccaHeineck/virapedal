@@ -15,6 +15,17 @@ export function GroupCard({ group }: GroupCardProps) {
         <Text style={styles.name} numberOfLines={1}>
           {group.name}
         </Text>
+
+        {group.description ? (
+          <Text style={styles.description} numberOfLines={2}>
+            {group.description}
+          </Text>
+        ) : null}
+
+        <Text style={styles.members} numberOfLines={1}>
+          {group.members_count} {group.members_count === 1 ? 'membro' : 'membros'}
+        </Text>
+
         <View style={[styles.badge, group.privacy === 'private' && styles.badgePrivate]}>
           <Text style={styles.badgeText}>{group.privacy === 'public' ? 'Público' : 'Privado'}</Text>
         </View>
@@ -37,6 +48,14 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  description: {
+    fontSize: 14,
+    color: '#555',
+  },
+  members: {
+    fontSize: 13,
+    color: '#777',
   },
   badge: {
     alignSelf: 'flex-start',

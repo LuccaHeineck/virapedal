@@ -16,9 +16,14 @@ export type Group = {
   created_by: string;
   created_at: string;
   updated_at: string;
+  // Membros ativos, via a computed column members_count() do PostgREST
+  // (migration 20260903120000). Só vem preenchido em SELECTs sobre a tabela
+  // groups — o retorno do RPC create_group não inclui.
+  members_count: number;
 };
 
-export const GROUP_COLUMNS = 'id, name, description, image_url, privacy, created_by, created_at, updated_at';
+export const GROUP_COLUMNS =
+  'id, name, description, image_url, privacy, created_by, created_at, updated_at, members_count';
 
 const GENERIC_LOAD_ERROR = 'Não foi possível carregar os grupos. Tente novamente.';
 
