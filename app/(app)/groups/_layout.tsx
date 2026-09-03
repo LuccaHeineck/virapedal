@@ -20,6 +20,7 @@ export default function GroupsLayout() {
             <TouchableOpacity
               onPress={() => router.push('/groups/new')}
               hitSlop={8}
+              style={{ marginRight: 12 }}
               accessibilityLabel="Criar grupo"
               accessibilityRole="button">
               <Ionicons name="add" size={26} color="#2f6feb" />
