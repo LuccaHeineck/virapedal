@@ -4,6 +4,7 @@ import { GROUP_COLUMNS, Group, GroupPrivacy } from './useGroups';
 
 const GENERIC_CREATE_ERROR = 'Não foi possível criar o grupo. Tente novamente.';
 const GENERIC_SAVE_ERROR = 'Não foi possível salvar as alterações do grupo. Tente novamente.';
+const GENERIC_DELETE_ERROR = 'Não foi possível deletar o grupo. Tente novamente.';
 
 export type CreateGroupInput = {
   name: string;
@@ -22,6 +23,8 @@ export type UpdateGroupInput = Partial<{
 export function useGroupMutations() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const createGroup = useCallback(async (input: CreateGroupInput) => {
     setSubmitting(true);
@@ -68,5 +71,20 @@ export function useGroupMutations() {
     return data;
   }, []);
 
-  return { createGroup, updateGroup, submitting, error };
+  const deleteGroup = useCallback(async (groupId: number) => {
+    setDeleting(true);
+    setDeleteError(null);
+
+    const { error: deleteErr } = await supabase.from('groups').delete().eq('id', groupId);
+
+    setDeleting(false);
+    if (deleteErr) {
+      setDeleteError(GENERIC_DELETE_ERROR);
+      return false;
+    }
+
+    return true;
+  }, []);
+
+  return { createGroup, updateGroup, deleteGroup, submitting, error, deleting, deleteError };
 }

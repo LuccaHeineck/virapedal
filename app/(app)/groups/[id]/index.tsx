@@ -56,6 +56,10 @@ export default function GroupDetail() {
     await leaveGroup();
   }
 
+  async function handleDelete() {
+    await deleteGroup(groupId);
+  }
+
   const isAdmin = membership?.role === 'admin';
 
   return (
