@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Image, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View, Alert, Platform } from 'react-native';
 import { Button } from '../../../../components/Button';
 import { GroupImage } from '../../../../components/GroupImage';
 import { LoadingView } from '../../../../components/LoadingView';
@@ -17,7 +17,7 @@ export default function EditGroup() {
   const router = useRouter();
 
   const { group, membership, loading: groupLoading, error: groupError } = useGroup(groupId);
-  const { updateGroup, submitting, error: saveError } = useGroupMutations();
+  const { updateGroup, submitting, error: saveError, deleteGroup, deleting, deleteError } = useGroupMutations();
   const { pickImage, uploadGroupCover, picking, uploading, error: imageError } = useImageUpload();
 
   const [name, setName] = useState('');
@@ -48,7 +48,7 @@ export default function EditGroup() {
     );
   }
 
-  const busy = submitting || picking || uploading;
+  const busy = submitting || picking || uploading || deleting;
   const canSubmit = name.trim().length > 0 && !busy;
 
   async function handlePickImage() {
@@ -73,6 +73,29 @@ export default function EditGroup() {
     });
     if (updated) {
       router.back();
+    }
+  }
+
+  async function handleDelete() {
+    const message = 'Tem certeza que deseja excluir este grupo? Esta ação não pode ser desfeita.';
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(message)) {
+        await confirmAndDelete();
+      }
+      return;
+    }
+    
+    Alert.alert('Excluir grupo', message, [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Excluir', style: 'destructive', onPress: confirmAndDelete },
+    ]);
+  }
+
+  async function confirmAndDelete() {
+    const ok = await deleteGroup(groupId);
+    if (ok) {
+      router.dismissAll();
     }
   }
 
@@ -111,6 +134,10 @@ export default function EditGroup() {
       {saveError ? <StatusText variant="error">{saveError}</StatusText> : null}
 
       <Button title="Salvar" onPress={handleSave} disabled={!canSubmit} loading={submitting} />
+
+      <Button title="Excluir grupo" variant='destructive' onPress={handleDelete} loading={deleting} disabled={busy} />
+      {deleteError ? <StatusText variant="error">{deleteError}</StatusText> : null}
+
     </ScrollView>
   );
 }

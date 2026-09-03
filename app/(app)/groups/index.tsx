@@ -133,12 +133,12 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 24,
+    paddingTop: 4,
     paddingBottom: 24,
     flexGrow: 1,
   },
   separator: {
-    height: 1,
-    backgroundColor: '#f0f0f0',
+    height: 12,
   },
   centered: {
     flex: 1,
