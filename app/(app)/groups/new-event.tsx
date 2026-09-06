@@ -1,4 +1,5 @@
-import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Button } from '../../../components/Button';
@@ -31,15 +32,44 @@ export default function NewEvent() {
   const [description, setDescription] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
 
+  // Igual ao caso da tela de detalhe do pedal: esta tela vive na pilha da
+  // aba Grupos (initialRouteName synthesiza "index" como destino de
+  // voltar), e o próprio pop nativo pode cair numa tela de pedal antiga
+  // ainda empilhada de uma navegação anterior. Única entrada hoje é o "+"
+  // da Home, então voltar sempre vai pra lá, não depende do histórico.
+  const backButton = (
+    <Stack.Screen
+      options={{
+        headerLeft: () => (
+          <TouchableOpacity
+            onPress={() => router.replace('/')}
+            hitSlop={8}
+            accessibilityLabel="Voltar"
+            accessibilityRole="button">
+            <Ionicons name="chevron-back" size={26} color={colors.primary} />
+          </TouchableOpacity>
+        ),
+      }}
+    />
+  );
+
   if (groupsLoading) {
-    return <LoadingView />;
+    return (
+      <>
+        {backButton}
+        <LoadingView />
+      </>
+    );
   }
 
   if (myGroups.length === 0) {
     return (
-      <View style={styles.centered}>
-        <StatusText variant="error">Você precisa participar de um grupo para criar um pedal.</StatusText>
-      </View>
+      <>
+        {backButton}
+        <View style={styles.centered}>
+          <StatusText variant="error">Você precisa participar de um grupo para criar um pedal.</StatusText>
+        </View>
+      </>
     );
   }
 
@@ -89,53 +119,56 @@ export default function NewEvent() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.label}>Grupo</Text>
-      <View style={styles.groupList}>
-        {myGroups.map((group) => (
-          <TouchableOpacity
-            key={group.id}
-            style={[styles.groupOption, selectedGroupId === group.id && styles.groupOptionSelected]}
-            onPress={() => setSelectedGroupId(group.id)}>
-            <Text style={[styles.groupOptionText, selectedGroupId === group.id && styles.groupOptionTextSelected]} numberOfLines={1}>
-              {group.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+    <>
+      {backButton}
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <Text style={styles.label}>Grupo</Text>
+        <View style={styles.groupList}>
+          {myGroups.map((group) => (
+            <TouchableOpacity
+              key={group.id}
+              style={[styles.groupOption, selectedGroupId === group.id && styles.groupOptionSelected]}
+              onPress={() => setSelectedGroupId(group.id)}>
+              <Text style={[styles.groupOptionText, selectedGroupId === group.id && styles.groupOptionTextSelected]} numberOfLines={1}>
+                {group.name}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
-      <TextField label="Título do pedal" value={title} onChangeText={setTitle} placeholder="Ex: Pedal Noturno Estrela" editable={!submitting} />
-      <TextField label="Data" value={eventDate} onChangeText={setEventDate} placeholder="AAAA-MM-DD" editable={!submitting} />
-      <TextField label="Horário de saída" value={startTime} onChangeText={setStartTime} placeholder="19:00" editable={!submitting} />
-      <TextField
-        label="Ponto de encontro"
-        value={meetingPoint}
-        onChangeText={setMeetingPoint}
-        placeholder="Ex: Praça Menna Barreto"
-        editable={!submitting}
-      />
-      <TextField
-        label="Descrição da rota"
-        value={routeDescription}
-        onChangeText={setRouteDescription}
-        placeholder="Ex: 25km asfalto e chão de terra (opcional)"
-        editable={!submitting}
-      />
-      <TextField
-        label="Observações"
-        value={description}
-        onChangeText={setDescription}
-        placeholder="Ex: trazer iluminação e capacete (opcional)"
-        multiline
-        numberOfLines={3}
-        editable={!submitting}
-      />
+        <TextField label="Título do pedal" value={title} onChangeText={setTitle} placeholder="Ex: Pedal Noturno Estrela" editable={!submitting} />
+        <TextField label="Data" value={eventDate} onChangeText={setEventDate} placeholder="AAAA-MM-DD" editable={!submitting} />
+        <TextField label="Horário de saída" value={startTime} onChangeText={setStartTime} placeholder="19:00" editable={!submitting} />
+        <TextField
+          label="Ponto de encontro"
+          value={meetingPoint}
+          onChangeText={setMeetingPoint}
+          placeholder="Ex: Praça Menna Barreto"
+          editable={!submitting}
+        />
+        <TextField
+          label="Descrição da rota"
+          value={routeDescription}
+          onChangeText={setRouteDescription}
+          placeholder="Ex: 25km asfalto e chão de terra (opcional)"
+          editable={!submitting}
+        />
+        <TextField
+          label="Observações"
+          value={description}
+          onChangeText={setDescription}
+          placeholder="Ex: trazer iluminação e capacete (opcional)"
+          multiline
+          numberOfLines={3}
+          editable={!submitting}
+        />
 
-      {validationError ? <StatusText variant="error">{validationError}</StatusText> : null}
-      {createError ? <StatusText variant="error">{createError}</StatusText> : null}
+        {validationError ? <StatusText variant="error">{validationError}</StatusText> : null}
+        {createError ? <StatusText variant="error">{createError}</StatusText> : null}
 
-      <Button title="Criar pedal" onPress={handleCreate} disabled={!canSubmit} loading={submitting} />
-    </ScrollView>
+        <Button title="Criar pedal" onPress={handleCreate} disabled={!canSubmit} loading={submitting} />
+      </ScrollView>
+    </>
   );
 }
 
