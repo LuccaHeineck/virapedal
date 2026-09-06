@@ -1,7 +1,27 @@
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Link, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { StatusText } from '../../components/StatusText';
+import { colors } from '../../constants/colors';
+import { EventStatus } from '../../hooks/useGroupEvents';
+import { useMyEventParticipations } from '../../hooks/useMyEventParticipations';
 import { useProfile } from '../../hooks/useProfile';
 import { supabase } from '../../lib/supabase';
+
+const STATUS_LABELS: Record<EventStatus, string> = {
+  scheduled: 'Agendado',
+  cancelled: 'Cancelado',
+  completed: 'Concluído',
+};
+
+function formatDate(dateStr: string) {
+  const [year, month, day] = dateStr.split('-');
+  return `${day}/${month}/${year}`;
+}
+
+function formatTime(timeStr: string) {
+  return timeStr.slice(0, 5);
+}
 
 export default function Profile() {
   const { profile, loading, error, save } = useProfile();
@@ -10,6 +30,14 @@ export default function Profile() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);
+
+  const { events: myEvents, loading: myEventsLoading, error: myEventsError, refresh: refreshMyEvents } = useMyEventParticipations();
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshMyEvents();
+    }, [refreshMyEvents])
+  );
 
   useEffect(() => {
     if (profile) {
@@ -61,53 +89,98 @@ export default function Profile() {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Perfil</Text>
-
-      {profile.profile_photo_url ? (
-        <Image source={{ uri: profile.profile_photo_url }} style={styles.avatar} />
-      ) : (
-        <View style={styles.avatarPlaceholder}>
-          <Text style={styles.avatarPlaceholderText}>{name.trim().charAt(0).toUpperCase() || '?'}</Text>
-        </View>
+    <FlatList
+      style={styles.container}
+      contentContainerStyle={styles.listContent}
+      data={myEvents}
+      keyExtractor={(item) => String(item.id)}
+      ItemSeparatorComponent={() => <View style={styles.separator} />}
+      renderItem={({ item }) => (
+        <Link href={`/groups/${item.group_id}/events/${item.id}?from=profile`} asChild>
+          <TouchableOpacity style={styles.eventRow}>
+            <View style={styles.eventHeader}>
+              <Text style={styles.eventTitle} numberOfLines={1}>
+                {item.title}
+              </Text>
+              {item.status !== 'scheduled' ? (
+                <View style={styles.statusBadge}>
+                  <Text style={styles.statusBadgeText}>{STATUS_LABELS[item.status]}</Text>
+                </View>
+              ) : null}
+            </View>
+            <Text style={styles.eventMeta}>
+              {formatDate(item.event_date)} às {formatTime(item.start_time)} · {item.group_name}
+            </Text>
+            {item.meeting_point ? <Text style={styles.eventMeta}>Ponto de encontro: {item.meeting_point}</Text> : null}
+          </TouchableOpacity>
+        </Link>
       )}
+      ListHeaderComponent={
+        <View style={styles.header}>
+          <Text style={styles.title}>Perfil</Text>
 
-      <TextInput
-        style={styles.input}
-        value={name}
-        onChangeText={(text) => {
-          setName(text);
-          setSaveSuccess(false);
-        }}
-        placeholder="Nome"
-        editable={!saving}
-      />
+          {profile.profile_photo_url ? (
+            <Image source={{ uri: profile.profile_photo_url }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarPlaceholderText}>{name.trim().charAt(0).toUpperCase() || '?'}</Text>
+            </View>
+          )}
 
-      {saveError ? <Text style={styles.error}>{saveError}</Text> : null}
-      {saveSuccess ? <Text style={styles.success}>Salvo.</Text> : null}
+          <TextInput
+            style={styles.input}
+            value={name}
+            onChangeText={(text) => {
+              setName(text);
+              setSaveSuccess(false);
+            }}
+            placeholder="Nome"
+            editable={!saving}
+          />
 
-      <TouchableOpacity
-        style={[styles.button, (saving || name.trim().length === 0) && styles.buttonDisabled]}
-        onPress={handleSave}
-        disabled={saving || name.trim().length === 0}>
-        {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Salvar</Text>}
-      </TouchableOpacity>
+          {saveError ? <Text style={styles.error}>{saveError}</Text> : null}
+          {saveSuccess ? <Text style={styles.success}>Salvo.</Text> : null}
 
-      {signOutError ? <Text style={styles.error}>{signOutError}</Text> : null}
+          <TouchableOpacity
+            style={[styles.button, (saving || name.trim().length === 0) && styles.buttonDisabled]}
+            onPress={handleSave}
+            disabled={saving || name.trim().length === 0}>
+            {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Salvar</Text>}
+          </TouchableOpacity>
 
-      <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-        <Text style={styles.signOutButtonText}>Sair</Text>
-      </TouchableOpacity>
-    </View>
+          {signOutError ? <Text style={styles.error}>{signOutError}</Text> : null}
+
+          <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+            <Text style={styles.signOutButtonText}>Sair</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.sectionTitle}>Meus pedais</Text>
+          {myEventsError ? <StatusText variant="error">{myEventsError}</StatusText> : null}
+        </View>
+      }
+      ListEmptyComponent={
+        myEventsLoading ? null : (
+          <View style={styles.centered}>
+            <Text style={styles.emptyText}>Você ainda não participa de nenhum pedal.</Text>
+          </View>
+        )
+      }
+    />
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#fff',
+  },
+  listContent: {
+    flexGrow: 1,
+    paddingBottom: 24,
+  },
+  header: {
     padding: 24,
     gap: 12,
-    backgroundColor: '#fff',
     alignItems: 'stretch',
   },
   centered: {
@@ -184,5 +257,48 @@ const styles = StyleSheet.create({
     color: '#c0392b',
     fontSize: 16,
     fontWeight: '600',
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    marginTop: 16,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#f0f0f0',
+    marginHorizontal: 24,
+  },
+  emptyText: {
+    color: '#888',
+    fontSize: 15,
+  },
+  eventRow: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    gap: 4,
+  },
+  eventHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  eventTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    flexShrink: 1,
+  },
+  statusBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    backgroundColor: colors.placeholder,
+  },
+  statusBadgeText: {
+    fontSize: 12,
+    color: '#555',
+  },
+  eventMeta: {
+    fontSize: 14,
+    color: '#666',
   },
 });
