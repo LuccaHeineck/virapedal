@@ -11,11 +11,20 @@ export default function GroupsLayout() {
   const router = useRouter();
 
   return (
-    <Stack screenOptions={{ headerTintColor: '#2f6feb' }}>
+    <Stack>
       <Stack.Screen
         name="index"
         options={{
           title: 'Grupos',
+          // "index" é sempre a raiz desta aba -- o initialRouteName acima
+          // (necessário pro F5 funcionar em rotas aninhadas) às vezes
+          // sintetiza histórico residual que faz o header mostrar um botão
+          // de voltar aqui indevidamente. headerBackVisible:false não é
+          // respeitado de forma confiável no React Native Web, então força
+          // via headerLeft mesmo (mesma categoria de limitação do
+          // Alert.alert nesse ambiente).
+          headerBackVisible: false,
+          headerLeft: () => null,
           headerRight: () => (
             <TouchableOpacity
               onPress={() => router.push('/groups/new')}
