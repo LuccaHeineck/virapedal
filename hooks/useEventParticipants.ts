@@ -23,6 +23,7 @@ const PARTICIPANT_COLUMNS =
 const GENERIC_LOAD_ERROR = 'Não foi possível carregar os participantes. Tente novamente.';
 const GENERIC_JOIN_ERROR = 'Não foi possível confirmar sua presença. Tente novamente.';
 const GENERIC_LEAVE_ERROR = 'Não foi possível sair do pedal. Tente novamente.';
+const GENERIC_GUEST_ERROR = 'Não foi possível adicionar o convidado. Tente novamente.';
 
 export function useEventParticipants(eventId: number) {
   const [participants, setParticipants] = useState<EventParticipant[]>([]);
@@ -131,5 +132,54 @@ export function useEventParticipants(eventId: number) {
     return true;
   }, [eventId, fetchParticipants]);
 
-  return { participants, loading, error, refresh: fetchParticipants, join, leave, submitting, actionError };
+  const addGuest = useCallback(
+    async (guestName: string) => {
+      if (!guestName.trim()) return false;
+
+      setSubmitting(true);
+      setActionError(null);
+
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData.user) {
+        setSubmitting(false);
+        setActionError(GENERIC_GUEST_ERROR);
+        return false;
+      }
+
+      const { data, error: insertError } = await supabase
+        .from('event_participants')
+        .insert({
+          event_id: eventId,
+          user_id: null,
+          guest_name: guestName.trim(),
+          added_by: userData.user.id,
+          status: 'confirmed',
+          confirmed_at: new Date().toISOString(),
+        })
+        .select('id')
+        .single();
+
+      setSubmitting(false);
+      if (insertError || !data) {
+        setActionError(GENERIC_GUEST_ERROR);
+        return false;
+      }
+
+      await fetchParticipants();
+      return true;
+    },
+    [eventId, fetchParticipants]
+  );
+
+  return {
+    participants,
+    loading,
+    error,
+    refresh: fetchParticipants,
+    join,
+    leave,
+    addGuest,
+    submitting,
+    actionError,
+  };
 }

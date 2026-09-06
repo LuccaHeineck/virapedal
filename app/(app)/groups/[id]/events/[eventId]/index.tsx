@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Link, Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { Alert, FlatList, Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Button } from '../../../../../../components/Button';
 import { LoadingView } from '../../../../../../components/LoadingView';
 import { StatusText } from '../../../../../../components/StatusText';
+import { TextField } from '../../../../../../components/TextField';
 import { colors } from '../../../../../../constants/colors';
 import { useAuth } from '../../../../../../context/AuthContext';
 import { EventStatus } from '../../../../../../hooks/useGroupEvents';
@@ -53,6 +54,8 @@ export default function EventDetail() {
   const numericEventId = Number(eventId);
   const router = useRouter();
 
+  const [guestName, setGuestName] = useState('');
+
   const { user } = useAuth();
   const { membership } = useGroup(groupId);
   const {
@@ -71,6 +74,7 @@ export default function EventDetail() {
     refresh: refreshParticipants,
     join,
     leave,
+    addGuest,
     submitting,
     actionError,
   } = useEventParticipants(numericEventId);
@@ -140,6 +144,14 @@ export default function EventDetail() {
       await leave();
     } else {
       await join();
+    }
+  }
+
+  async function handleAddGuest() {
+    if (!guestName.trim()) return;
+    const ok = await addGuest(guestName.trim());
+    if (ok) {
+      setGuestName('');
     }
   }
 
@@ -226,6 +238,29 @@ export default function EventDetail() {
             ) : null}
             {deleteError ? <StatusText variant="error">{deleteError}</StatusText> : null}
 
+            {canEdit ? (
+              <View style={styles.guestSection}>
+                <View style={{ flex: 1 }}>
+                  <TextField
+                    label="Adicionar Convidado"
+                    placeholder="Nome do convidado"
+                    value={guestName}
+                    onChangeText={setGuestName}
+                    editable={!submitting}
+                  />
+                </View>
+                <View style={styles.guestButtonContainer}>
+                  <Button
+                    title="Adicionar"
+                    variant="primary"
+                    onPress={handleAddGuest}
+                    disabled={submitting || !guestName.trim()}
+                    loading={submitting}
+                  />
+                </View>
+              </View>
+            ) : null}
+
             <Text style={styles.sectionTitle}>Participantes ({participants.length})</Text>
 
             {participantsError ? <StatusText variant="error">{participantsError}</StatusText> : null}
@@ -255,6 +290,15 @@ const styles = StyleSheet.create({
   header: {
     gap: 8,
     marginBottom: 12,
+  },
+  guestSection: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 8,
+    marginTop: 8,
+  },
+  guestButtonContainer: {
+    minWidth: 120,
   },
   centered: {
     flex: 1,
