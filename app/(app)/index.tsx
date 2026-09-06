@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Link, useFocusEffect, useRouter } from 'expo-router';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LoadingView } from '../../components/LoadingView';
 import { StatusText } from '../../components/StatusText';
 import { colors } from '../../constants/colors';
 import { useAuth } from '../../context/AuthContext';
 import { useUpcomingEvents } from '../../hooks/useUpcomingEvents';
+import { subscribeHomeRefresh } from '../../lib/homeRefreshEmitter';
 
 function formatDate(dateStr: string) {
   const [year, month, day] = dateStr.split('-');
@@ -29,6 +30,10 @@ export default function Home() {
       refresh();
     }, [refresh])
   );
+
+  // Cobre o caso de tocar em "Início" já estando nela, que não muda o foco
+  // e por isso não dispara o useFocusEffect acima.
+  useEffect(() => subscribeHomeRefresh(refresh), [refresh]);
 
   return (
     <View style={styles.container}>

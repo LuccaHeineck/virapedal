@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import { triggerHomeRefresh } from '../../lib/homeRefreshEmitter';
 
 export default function AppLayout() {
   return (
@@ -12,6 +13,18 @@ export default function AppLayout() {
             <Ionicons name={focused ? 'home' : 'home-outline'} color={color} size={size} />
           ),
         }}
+        // useFocusEffect não dispara ao tocar numa aba já focada (sem
+        // mudança de foco, sem novo evento) -- por isso o toque em "Início"
+        // estando nela não recarregava nada. Avisa a tela via um pub-sub
+        // simples só quando a aba já está ativa (senão navegar até ela via
+        // outra aba já dispararia o refresh normal pelo useFocusEffect).
+        listeners={({ navigation }) => ({
+          tabPress: () => {
+            if (navigation.isFocused()) {
+              triggerHomeRefresh();
+            }
+          },
+        })}
       />
 
       <Tabs.Screen
