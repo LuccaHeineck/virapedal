@@ -1,27 +1,11 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { EventRow } from '../../components/EventRow';
 import { StatusText } from '../../components/StatusText';
-import { colors } from '../../constants/colors';
-import { EventStatus } from '../../hooks/useGroupEvents';
 import { useMyEventParticipations } from '../../hooks/useMyEventParticipations';
 import { useProfile } from '../../hooks/useProfile';
 import { supabase } from '../../lib/supabase';
-
-const STATUS_LABELS: Record<EventStatus, string> = {
-  scheduled: 'Agendado',
-  cancelled: 'Cancelado',
-  completed: 'Concluído',
-};
-
-function formatDate(dateStr: string) {
-  const [year, month, day] = dateStr.split('-');
-  return `${day}/${month}/${year}`;
-}
-
-function formatTime(timeStr: string) {
-  return timeStr.slice(0, 5);
-}
 
 export default function Profile() {
   const { profile, loading, error, save } = useProfile();
@@ -98,20 +82,15 @@ export default function Profile() {
       renderItem={({ item }) => (
         <Link href={`/groups/${item.group_id}/events/${item.id}?from=profile`} asChild>
           <TouchableOpacity style={styles.eventRow}>
-            <View style={styles.eventHeader}>
-              <Text style={styles.eventTitle} numberOfLines={1}>
-                {item.title}
-              </Text>
-              {item.status !== 'scheduled' ? (
-                <View style={styles.statusBadge}>
-                  <Text style={styles.statusBadgeText}>{STATUS_LABELS[item.status]}</Text>
-                </View>
-              ) : null}
-            </View>
-            <Text style={styles.eventMeta}>
-              {formatDate(item.event_date)} às {formatTime(item.start_time)} · {item.group_name}
-            </Text>
-            {item.meeting_point ? <Text style={styles.eventMeta}>Ponto de encontro: {item.meeting_point}</Text> : null}
+            <EventRow
+              title={item.title}
+              status={item.status}
+              eventDate={item.event_date}
+              startTime={item.start_time}
+              meetingPoint={item.meeting_point}
+              groupName={item.group_name}
+              groupImagePath={item.group_image_url}
+            />
           </TouchableOpacity>
         </Link>
       )}
@@ -274,31 +253,5 @@ const styles = StyleSheet.create({
   },
   eventRow: {
     paddingHorizontal: 24,
-    paddingVertical: 12,
-    gap: 4,
-  },
-  eventHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  eventTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    flexShrink: 1,
-  },
-  statusBadge: {
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    backgroundColor: colors.placeholder,
-  },
-  statusBadgeText: {
-    fontSize: 12,
-    color: '#555',
-  },
-  eventMeta: {
-    fontSize: 14,
-    color: '#666',
   },
 });

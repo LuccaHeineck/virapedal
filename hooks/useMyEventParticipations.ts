@@ -8,6 +8,9 @@ export type MyEventParticipation = {
   id: number;
   group_id: number;
   group_name: string;
+  // Caminho no bucket privado group-images, não uma URL navegável -- use
+  // GroupImage/useSignedImageUrl pra renderizar.
+  group_image_url: string | null;
   title: string;
   event_date: string; // 'AAAA-MM-DD'
   start_time: string; // 'HH:MM:SS'
@@ -56,11 +59,17 @@ export function useMyEventParticipations() {
 
     const { data, error: eventsError } = await supabase
       .from('events')
-      .select('id, group_id, title, event_date, start_time, meeting_point, status, groups(name)')
+      .select('id, group_id, title, event_date, start_time, meeting_point, status, groups(name, image_url)')
       .in('id', eventIds)
       .order('event_date', { ascending: true })
       .order('start_time', { ascending: true })
-      .returns<Array<Omit<MyEventParticipation, 'group_name'> & { groups: { name: string } | null }>>();
+      .returns<
+        Array<
+          Omit<MyEventParticipation, 'group_name' | 'group_image_url'> & {
+            groups: { name: string; image_url: string | null } | null;
+          }
+        >
+      >();
 
     if (eventsError || !data) {
       setError(GENERIC_LOAD_ERROR);
@@ -68,7 +77,13 @@ export function useMyEventParticipations() {
       return;
     }
 
-    setEvents(data.map(({ groups, ...event }) => ({ ...event, group_name: groups?.name ?? '' })));
+    setEvents(
+      data.map(({ groups, ...event }) => ({
+        ...event,
+        group_name: groups?.name ?? '',
+        group_image_url: groups?.image_url ?? null,
+      }))
+    );
     setLoading(false);
   }, []);
 
