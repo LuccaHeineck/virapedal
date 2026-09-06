@@ -226,7 +226,7 @@ export default function EventDetail() {
             ) : null}
             {deleteError ? <StatusText variant="error">{deleteError}</StatusText> : null}
 
-            <Text style={styles.sectionTitle}>Participantes</Text>
+            <Text style={styles.sectionTitle}>Participantes ({participants.length})</Text>
 
             {participantsError ? <StatusText variant="error">{participantsError}</StatusText> : null}
           </View>
