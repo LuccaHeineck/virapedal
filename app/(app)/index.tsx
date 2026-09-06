@@ -1,4 +1,5 @@
-import { Link, useFocusEffect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LoadingView } from '../../components/LoadingView';
@@ -17,6 +18,7 @@ function formatTime(timeStr: string) {
 }
 
 export default function Home() {
+  const router = useRouter();
   const { user } = useAuth();
   const name = typeof user?.user_metadata?.name === 'string' ? user.user_metadata.name : undefined;
 
@@ -65,6 +67,14 @@ export default function Home() {
           }
         />
       )}
+
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => router.push('/groups/new-event')}
+        accessibilityLabel="Criar pedal"
+        accessibilityRole="button">
+        <Ionicons name="add" size={28} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -111,5 +121,21 @@ const styles = StyleSheet.create({
   eventMeta: {
     fontSize: 14,
     color: '#666',
+  },
+  fab: {
+    position: 'absolute',
+    right: 24,
+    bottom: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
   },
 });

@@ -35,6 +35,51 @@ export type CreateEventInput = {
   routeDescription: string | null;
 };
 
+// Compartilhado entre useGroupEvents (criação a partir da tela do grupo, com
+// groupId fixo) e useCreateEvent (criação a partir da Home, com groupId
+// escolhido num seletor) -- mesma lógica de duas etapas nos dois casos.
+export async function createGroupEvent(groupId: number, input: CreateEventInput) {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    return null;
+  }
+
+  const { data, error: insertError } = await supabase
+    .from('events')
+    .insert({
+      group_id: groupId,
+      created_by: userData.user.id,
+      title: input.title,
+      description: input.description,
+      event_date: input.eventDate,
+      start_time: input.startTime,
+      meeting_point: input.meetingPoint,
+      route_description: input.routeDescription,
+    })
+    .select('id')
+    .single();
+
+  if (insertError || !data) {
+    return null;
+  }
+
+  // Quem cria o pedal já entra como participante confirmado. Isto roda
+  // como um segundo INSERT (a policy de event_participants exige
+  // can_view_event(), que consulta a linha de events já commitada por
+  // este primeiro INSERT) -- não precisa de uma função atômica como
+  // create_group(), já que aqui não há bootstrap de permissão em jogo.
+  // Falha nesta segunda etapa não desfaz o pedal já criado; o próprio
+  // criador consegue entrar manualmente depois se isto falhar.
+  await supabase.from('event_participants').insert({
+    event_id: data.id,
+    user_id: userData.user.id,
+    status: 'confirmed',
+    confirmed_at: new Date().toISOString(),
+  });
+
+  return data;
+}
+
 export function useGroupEvents(groupId: number) {
   const [events, setEvents] = useState<GroupEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,49 +124,14 @@ export function useGroupEvents(groupId: number) {
       setSubmitting(true);
       setCreateError(null);
 
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError || !userData.user) {
-        setCreateError(GENERIC_CREATE_ERROR);
-        setSubmitting(false);
-        return false;
-      }
-
-      const { data, error: insertError } = await supabase
-        .from('events')
-        .insert({
-          group_id: groupId,
-          created_by: userData.user.id,
-          title: input.title,
-          description: input.description,
-          event_date: input.eventDate,
-          start_time: input.startTime,
-          meeting_point: input.meetingPoint,
-          route_description: input.routeDescription,
-        })
-        .select('id')
-        .single();
-
-      if (insertError || !data) {
-        setSubmitting(false);
-        setCreateError(GENERIC_CREATE_ERROR);
-        return false;
-      }
-
-      // Quem cria o pedal já entra como participante confirmado. Isto roda
-      // como um segundo INSERT (a policy de event_participants exige
-      // can_view_event(), que consulta a linha de events já commitada por
-      // este primeiro INSERT) -- não precisa de uma função atômica como
-      // create_group(), já que aqui não há bootstrap de permissão em jogo.
-      // Falha nesta segunda etapa não desfaz o pedal já criado; o próprio
-      // criador consegue entrar manualmente depois se isto falhar.
-      await supabase.from('event_participants').insert({
-        event_id: data.id,
-        user_id: userData.user.id,
-        status: 'confirmed',
-        confirmed_at: new Date().toISOString(),
-      });
+      const created = await createGroupEvent(groupId, input);
 
       setSubmitting(false);
+      if (!created) {
+        setCreateError(GENERIC_CREATE_ERROR);
+        return false;
+      }
+
       await fetchEvents();
       return true;
     },
