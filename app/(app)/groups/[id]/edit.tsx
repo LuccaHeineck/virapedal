@@ -121,13 +121,19 @@ export default function EditGroup() {
       />
 
       <View style={styles.privacyRow}>
-        <View>
+        <View style={styles.privacyTextGroup}>
           <Text style={styles.privacyLabel}>Grupo privado</Text>
           <Text style={styles.privacyHint}>
             {isPrivate ? 'Entrada mediante aprovação de um admin.' : 'Qualquer pessoa pode entrar diretamente.'}
           </Text>
         </View>
-        <Switch value={isPrivate} onValueChange={setIsPrivate} disabled={busy} />
+        <Switch
+          value={isPrivate}
+          onValueChange={setIsPrivate}
+          disabled={busy}
+          trackColor={{ false: colors.border, true: colors.primary }}
+          thumbColor="#fff"
+        />
       </View>
 
       {imageError ? <StatusText variant="error">{imageError}</StatusText> : null}
@@ -172,6 +178,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
+  },
+  // Sem isto, o texto (sem limite de largura) empurra o Switch pra fora da
+  // tela em vez de quebrar linha, escondendo-o em telas mais estreitas.
+  privacyTextGroup: {
+    flex: 1,
   },
   privacyLabel: {
     fontSize: 16,

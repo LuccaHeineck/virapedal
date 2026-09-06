@@ -39,16 +39,29 @@ export default function AppLayout() {
             <Ionicons name={focused ? 'people' : 'people-outline'} color={color} size={size} />
           ),
         }}
-        // Um link para um pedal aberto a partir da aba Início empurra aquela
-        // tela para dentro da pilha desta aba (a rota mora em
-        // app/(app)/groups/...). Sem isto, tocar no botão "Grupos" só troca
-        // de aba mostrando o que ficou no topo dessa pilha -- o pedal, não a
-        // lista de grupos. Forçar o destino para "index" a cada toque
-        // garante que este botão sempre volte à lista de grupos.
+        // Um link para um pedal ou "Novo pedal" aberto a partir de outra aba
+        // empurra aquela tela para dentro da pilha desta aba (as rotas
+        // moram em app/(app)/groups/...). navigation.navigate('groups',
+        // {screen:'index'}) já resolvia o caso de ficar preso nela, mas
+        // ainda deixava a tela residual "piscar" na troca de aba antes de
+        // navegar pra index. Resetar o estado da pilha aninhada diretamente
+        // (RESET com target no key dela) troca pra "Grupos" já mostrando
+        // só a lista, sem esse flash.
         listeners={({ navigation }) => ({
           tabPress: (e) => {
             e.preventDefault();
-            navigation.navigate('groups', { screen: 'index' });
+
+            const groupsRoute = navigation.getState().routes.find((route: { name: string }) => route.name === 'groups');
+
+            if (groupsRoute?.state && groupsRoute.state.index !== 0) {
+              navigation.dispatch({
+                type: 'RESET',
+                payload: { index: 0, routes: [{ name: 'index' }] },
+                target: groupsRoute.state.key,
+              });
+            } else {
+              navigation.navigate('groups', { screen: 'index' });
+            }
           },
         })}
       />
