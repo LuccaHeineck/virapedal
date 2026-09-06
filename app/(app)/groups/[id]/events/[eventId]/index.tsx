@@ -189,10 +189,18 @@ export default function EventDetail() {
               ) : null}
             </View>
 
-            <Text style={styles.meta}>
-              {formatDate(event.event_date)} às {formatTime(event.start_time)} · {event.group_name}
-            </Text>
-            {event.meeting_point ? <Text style={styles.meta}>Ponto de encontro: {event.meeting_point}</Text> : null}
+            <View style={styles.metaRow}>
+              <Ionicons name="time-outline" size={14} color="#666" />
+              <Text style={styles.meta}>
+                {formatDate(event.event_date)} às {formatTime(event.start_time)} · {event.group_name}
+              </Text>
+            </View>
+            {event.meeting_point ? (
+              <View style={styles.metaRow}>
+                <Ionicons name="location-outline" size={14} color="#666" />
+                <Text style={styles.meta}>{event.meeting_point}</Text>
+              </View>
+            ) : null}
             {event.route_description ? <Text style={styles.meta}>Percurso: {event.route_description}</Text> : null}
             {event.description ? <Text style={styles.description}>{event.description}</Text> : null}
             <Text style={styles.meta}>Criado por {event.creator_name}</Text>
@@ -277,6 +285,12 @@ const styles = StyleSheet.create({
   meta: {
     fontSize: 14,
     color: '#666',
+    flexShrink: 1,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
   },
   description: {
     fontSize: 15,

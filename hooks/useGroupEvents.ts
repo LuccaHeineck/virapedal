@@ -5,6 +5,12 @@ import { supabase } from '../lib/supabase';
 // `npx supabase gen types typescript` (ver lib/supabase.ts).
 export type EventStatus = 'scheduled' | 'cancelled' | 'completed';
 
+export const EVENT_STATUS_LABELS: Record<EventStatus, string> = {
+  scheduled: 'Agendado',
+  cancelled: 'Cancelado',
+  completed: 'Concluído',
+};
+
 export type GroupEvent = {
   id: number;
   group_id: number;
@@ -18,6 +24,9 @@ export type GroupEvent = {
   status: EventStatus;
   created_at: string;
   updated_at: string;
+  // Se o usuário atual participa (status != 'cancelled' em
+  // event_participants) -- calculado com uma segunda query, não vem de events.
+  is_participant: boolean;
 };
 
 export const EVENT_COLUMNS =
@@ -95,13 +104,15 @@ export function useGroupEvents(groupId: number) {
     setLoading(true);
     setError(null);
 
+    const { data: userData } = await supabase.auth.getUser();
+
     const { data, error: selectError } = await supabase
       .from('events')
       .select(EVENT_COLUMNS)
       .eq('group_id', groupId)
       .order('event_date', { ascending: true })
       .order('start_time', { ascending: true })
-      .returns<GroupEvent[]>();
+      .returns<Array<Omit<GroupEvent, 'is_participant'>>>();
 
     if (selectError || !data) {
       setError(GENERIC_LOAD_ERROR);
@@ -109,7 +120,25 @@ export function useGroupEvents(groupId: number) {
       return;
     }
 
-    setEvents(data);
+    // Segunda query só com os ids já carregados, em vez de embed -- evita
+    // repetir o problema de FK ambígua de event_participants (user_id e
+    // added_by apontam pros dois pra users) e mantém o filtro por status
+    // simples.
+    let participatingIds = new Set<number>();
+    if (userData.user && data.length > 0) {
+      const { data: participations } = await supabase
+        .from('event_participants')
+        .select('event_id')
+        .eq('user_id', userData.user.id)
+        .neq('status', 'cancelled')
+        .in(
+          'event_id',
+          data.map((event) => event.id)
+        );
+      participatingIds = new Set(participations?.map((row) => row.event_id) ?? []);
+    }
+
+    setEvents(data.map((event) => ({ ...event, is_participant: participatingIds.has(event.id) })));
     setLoading(false);
   }, [groupId]);
 
