@@ -85,11 +85,17 @@ export default function EventDetail() {
   // O header padrão do Stack sempre volta para "index" (lista de grupos) --
   // efeito colateral do initialRouteName do _layout, necessário para o F5
   // funcionar em rotas aninhadas, mas que quebra o "voltar" real quando esta
-  // tela é aberta a partir de outra aba (Início). Por isso a origem vem
-  // explícita via ?from= no link, e o botão de voltar é controlado aqui em
-  // vez de depender do histórico nativo da pilha.
+  // tela é aberta a partir de outra aba (Início ou Perfil). Por isso a
+  // origem vem explícita via ?from= no link, e o botão de voltar é
+  // controlado aqui em vez de depender do histórico nativo da pilha.
   const handleBack = useCallback(() => {
-    router.replace(from === 'home' ? '/' : `/groups/${groupId}/events`);
+    if (from === 'home') {
+      router.replace('/');
+    } else if (from === 'profile') {
+      router.replace('/profile');
+    } else {
+      router.replace(`/groups/${groupId}/events`);
+    }
   }, [router, from, groupId]);
 
   const backButton = (
@@ -220,7 +226,7 @@ export default function EventDetail() {
             ) : null}
             {deleteError ? <StatusText variant="error">{deleteError}</StatusText> : null}
 
-            <Text style={styles.sectionTitle}>Participantes</Text>
+            <Text style={styles.sectionTitle}>Participantes ({participants.length})</Text>
 
             {participantsError ? <StatusText variant="error">{participantsError}</StatusText> : null}
           </View>
