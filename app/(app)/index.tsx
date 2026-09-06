@@ -1,21 +1,13 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { EventRow } from '../../components/EventRow';
 import { LoadingView } from '../../components/LoadingView';
 import { StatusText } from '../../components/StatusText';
 import { colors } from '../../constants/colors';
 import { useAuth } from '../../context/AuthContext';
 import { useUpcomingEvents } from '../../hooks/useUpcomingEvents';
 import { subscribeHomeRefresh } from '../../lib/homeRefreshEmitter';
-
-function formatDate(dateStr: string) {
-  const [year, month, day] = dateStr.split('-');
-  return `${day}/${month}/${year}`;
-}
-
-function formatTime(timeStr: string) {
-  return timeStr.slice(0, 5);
-}
 
 export default function Home() {
   const { user } = useAuth();
@@ -52,14 +44,17 @@ export default function Home() {
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           renderItem={({ item }) => (
             <Link href={`/groups/${item.group_id}/events/${item.id}?from=home`} asChild>
-              <TouchableOpacity style={styles.eventRow}>
-                <Text style={styles.eventTitle} numberOfLines={1}>
-                  {item.title}
-                </Text>
-                <Text style={styles.eventMeta}>
-                  {formatDate(item.event_date)} às {formatTime(item.start_time)} · {item.group_name}
-                </Text>
-                {item.meeting_point ? <Text style={styles.eventMeta}>Ponto de encontro: {item.meeting_point}</Text> : null}
+              <TouchableOpacity>
+                <EventRow
+                  title={item.title}
+                  status={item.status}
+                  eventDate={item.event_date}
+                  startTime={item.start_time}
+                  meetingPoint={item.meeting_point}
+                  groupName={item.group_name}
+                  groupImagePath={item.group_image_url}
+                  isParticipant={item.is_participant}
+                />
               </TouchableOpacity>
             </Link>
           )}
@@ -104,17 +99,5 @@ const styles = StyleSheet.create({
     color: '#888',
     fontSize: 15,
     textAlign: 'center',
-  },
-  eventRow: {
-    paddingVertical: 12,
-    gap: 4,
-  },
-  eventTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  eventMeta: {
-    fontSize: 14,
-    color: '#666',
   },
 });

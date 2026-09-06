@@ -8,11 +8,15 @@ export type UpcomingEvent = {
   id: number;
   group_id: number;
   group_name: string;
+  // Caminho no bucket privado group-images, não uma URL navegável -- use
+  // GroupImage/useSignedImageUrl pra renderizar.
+  group_image_url: string | null;
   title: string;
   event_date: string; // 'AAAA-MM-DD'
   start_time: string; // 'HH:MM:SS'
   meeting_point: string | null;
   status: EventStatus;
+  is_participant: boolean;
 };
 
 const GENERIC_LOAD_ERROR = 'Não foi possível carregar os pedais. Tente novamente.';
@@ -62,12 +66,18 @@ export function useUpcomingEvents() {
 
     const { data, error: eventsError } = await supabase
       .from('events')
-      .select('id, group_id, title, event_date, start_time, meeting_point, status, groups(name)')
+      .select('id, group_id, title, event_date, start_time, meeting_point, status, groups(name, image_url)')
       .in('group_id', groupIds)
       .gte('event_date', todayDateString())
       .order('event_date', { ascending: true })
       .order('start_time', { ascending: true })
-      .returns<Array<Omit<UpcomingEvent, 'group_name'> & { groups: { name: string } | null }>>();
+      .returns<
+        Array<
+          Omit<UpcomingEvent, 'group_name' | 'group_image_url' | 'is_participant'> & {
+            groups: { name: string; image_url: string | null } | null;
+          }
+        >
+      >();
 
     if (eventsError || !data) {
       setError(GENERIC_LOAD_ERROR);
@@ -75,7 +85,32 @@ export function useUpcomingEvents() {
       return;
     }
 
-    setEvents(data.map(({ groups, ...event }) => ({ ...event, group_name: groups?.name ?? '' })));
+    // Segunda query só com os ids já carregados -- mesma razão de
+    // useGroupEvents: event_participants tem duas FKs pra users, então
+    // embed direto exige desambiguar, e aqui nem precisamos de nome/foto,
+    // só saber quais ids já tem participação ativa.
+    let participatingIds = new Set<number>();
+    if (data.length > 0) {
+      const { data: participations } = await supabase
+        .from('event_participants')
+        .select('event_id')
+        .eq('user_id', userData.user.id)
+        .neq('status', 'cancelled')
+        .in(
+          'event_id',
+          data.map((event) => event.id)
+        );
+      participatingIds = new Set(participations?.map((row) => row.event_id) ?? []);
+    }
+
+    setEvents(
+      data.map(({ groups, ...event }) => ({
+        ...event,
+        group_name: groups?.name ?? '',
+        group_image_url: groups?.image_url ?? null,
+        is_participant: participatingIds.has(event.id),
+      }))
+    );
     setLoading(false);
   }, []);
 
