@@ -66,6 +66,42 @@ export default function AppLayout() {
         })}
       />
       <Tabs.Screen
+        name="routes"
+        options={{
+          title: 'Rotas',
+          // A pilha aninhada em app/(app)/routes/_layout.tsx tem seu próprio
+          // cabeçalho por tela -- sem isto, o cabeçalho das Tabs empilha em
+          // cima do dela.
+          headerShown: false,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'map' : 'map-outline'} color={color} size={size} />
+          ),
+        }}
+        // Mesmo tratamento da aba "Grupos": um link para uma rota aberto a
+        // partir de outra aba empurra aquela tela para dentro da pilha desta
+        // aba. Resetar o estado da pilha aninhada diretamente troca para
+        // "Rotas" já mostrando só a lista, sem flash da tela residual.
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            e.preventDefault();
+
+            const routesRoute = navigation
+              .getState()
+              .routes.find((route: { name: string }) => route.name === 'routes');
+
+            if (routesRoute?.state && routesRoute.state.index !== 0) {
+              navigation.dispatch({
+                type: 'RESET',
+                payload: { index: 0, routes: [{ name: 'index' }] },
+                target: routesRoute.state.key,
+              });
+            } else {
+              navigation.navigate('routes', { screen: 'index' });
+            }
+          },
+        })}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Perfil',
