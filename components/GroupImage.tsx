@@ -1,6 +1,7 @@
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../constants/colors';
 import { useSignedImageUrl } from '../hooks/useSignedImageUrl';
+import { GROUP_IMAGES_BUCKET } from '../lib/groupImages';
 
 type GroupImageProps = {
   path: string | null;
@@ -9,7 +10,7 @@ type GroupImageProps = {
 };
 
 export function GroupImage({ path, name, size = 72 }: GroupImageProps) {
-  const { url } = useSignedImageUrl(path);
+  const { url } = useSignedImageUrl(GROUP_IMAGES_BUCKET, path);
   const dimensionStyle = { width: size, height: size, borderRadius: size / 2 };
 
   if (url) {
