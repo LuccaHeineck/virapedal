@@ -1,8 +1,11 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { AuthDivider } from '../../components/AuthDivider';
+import { GoogleSignInButton } from '../../components/GoogleSignInButton';
+import { getAuthErrorMessage, getOAuthRedirectErrorMessage } from '../../lib/authErrors';
+import { signInWithGoogle } from '../../lib/googleAuth';
 import { supabase } from '../../lib/supabase';
-import { getAuthErrorMessage } from '../../lib/authErrors';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -35,9 +38,41 @@ export default function Login() {
     setSubmitting(false);
   }
 
+  async function handleGoogleSignIn() {
+    if (submitting) {
+      return;
+    }
+    setError(null);
+    setSubmitting(true);
+
+    const { error: googleError, cancelled, redirectFailed } = await signInWithGoogle();
+
+    if (cancelled) {
+      setSubmitting(false);
+      return;
+    }
+    if (redirectFailed) {
+      setError(getOAuthRedirectErrorMessage());
+      setSubmitting(false);
+      return;
+    }
+    if (googleError) {
+      setError(getAuthErrorMessage(googleError));
+      setSubmitting(false);
+      return;
+    }
+
+    // Em caso de sucesso, o listener onAuthStateChange do AuthContext recebe SIGNED_IN
+    // e o roteamento do layout raiz redireciona para o grupo autenticado.
+    setSubmitting(false);
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Entrar</Text>
+
+      <GoogleSignInButton busy={submitting} onPress={handleGoogleSignIn} />
+      <AuthDivider />
 
       <TextInput
         style={styles.input}
