@@ -26,8 +26,8 @@ BEGIN
     INSERT INTO public.users (id, name, profile_photo_url)
     VALUES (
         NEW.id,
-        COALESCE(NEW.raw_user_meta_data->>'name', 'New rider'),
-        NEW.raw_user_meta_data->>'profile_photo_url'
+        COALESCE(NEW.raw_user_meta_data->>'name', NEW.raw_user_meta_data->>'full_name', 'New rider'),
+        COALESCE(NEW.raw_user_meta_data->>'profile_photo_url', NEW.raw_user_meta_data->>'avatar_url')
     );
     RETURN NEW;
 END;
