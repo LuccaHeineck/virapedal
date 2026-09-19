@@ -31,7 +31,8 @@
         {
           "photosPermission": "O Virapedal usa suas fotos para definir a imagem de capa de um grupo."
         }
-      ]
+      ],
+      "expo-web-browser"
     ]
   }
 }

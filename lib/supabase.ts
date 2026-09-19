@@ -19,5 +19,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
+    // Exigido pelo login com Google (lib/googleAuth.ts): sem isso, o
+    // supabase-js usa o fluxo implícito por padrão e o Google nunca retorna
+    // um `code` na URL de redirecionamento, apenas tokens no fragmento.
+    flowType: 'pkce',
   },
 });
