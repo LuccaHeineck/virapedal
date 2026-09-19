@@ -31,6 +31,7 @@ function formatTime(timeStr: string) {
 function ParticipantRow({ participant }: { participant: EventParticipant }) {
   const name = participant.users?.name ?? participant.guest_name ?? 'Usuário';
   const photoUrl = participant.users?.profile_photo_url ?? null;
+  const isGuest = !participant.user_id;
 
   return (
     <View style={styles.participantRow}>
@@ -44,6 +45,11 @@ function ParticipantRow({ participant }: { participant: EventParticipant }) {
       <Text style={styles.participantName} numberOfLines={1}>
         {name}
       </Text>
+      {isGuest ? (
+        <View style={styles.guestBadge}>
+          <Text style={styles.guestBadgeText}>Convidado</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -91,7 +97,7 @@ export default function EventDetail() {
   // funcionar em rotas aninhadas, mas que quebra o "voltar" real quando esta
   // tela é aberta a partir de outra aba (Início ou Perfil). Por isso a
   // origem vem explícita via ?from= no link, e o botão de voltar é
-  // controlado aqui em vez de depender do histórico nativo da pilha.
+  // controlled aqui em vez de depender do histórico nativo da pilha.
   const handleBack = useCallback(() => {
     if (from === 'home') {
       router.replace('/');
@@ -138,6 +144,10 @@ export default function EventDetail() {
   const isGroupAdmin = membership?.role === 'admin';
   const canEdit = isCreator || isGroupAdmin;
   const isParticipant = participants.some((p) => p.user_id === user?.id);
+
+  // aqui ele filtra os participantes em duas listas: os registrados (com user_id) e os convidados (sem user_id ou com guest_name)
+  const registeredParticipants = participants.filter((p) => p.user_id !== null);
+  const guestParticipants = participants.filter((p) => p.guest_name !== null || p.user_id === null);
 
   async function handleToggleParticipation() {
     if (isParticipant) {
@@ -187,7 +197,7 @@ export default function EventDetail() {
       <FlatList
         style={styles.container}
         contentContainerStyle={styles.content}
-        data={participants}
+        data={registeredParticipants}
         keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => <ParticipantRow participant={item} />}
         ListHeaderComponent={
@@ -261,13 +271,23 @@ export default function EventDetail() {
               </View>
             ) : null}
 
-            <Text style={styles.sectionTitle}>Participantes ({participants.length})</Text>
+            <Text style={styles.sectionTitle}>Participantes ({registeredParticipants.length})</Text>
 
             {participantsError ? <StatusText variant="error">{participantsError}</StatusText> : null}
           </View>
         }
+        ListFooterComponent={
+          guestParticipants.length > 0 ? (
+            <View style={styles.guestListContainer}>
+              <Text style={styles.sectionTitle}>Convidados ({guestParticipants.length})</Text>
+              {guestParticipants.map((item) => (
+                <ParticipantRow key={String(item.id)} participant={item} />
+              ))}
+            </View>
+          ) : null
+        }
         ListEmptyComponent={
-          participantsLoading ? null : (
+          participantsLoading || guestParticipants.length > 0 ? null : (
             <View style={styles.centered}>
               <Text style={styles.emptyText}>Nenhum participante ainda.</Text>
             </View>
@@ -345,6 +365,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     marginTop: 16,
+    marginBottom: 8,
   },
   emptyText: {
     color: '#888',
@@ -377,5 +398,20 @@ const styles = StyleSheet.create({
   participantName: {
     fontSize: 15,
     flexShrink: 1,
+  },
+  guestListContainer: {
+    marginTop: 8,
+  },
+  guestBadge: {
+    backgroundColor: '#E0E0E0',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginLeft: 'auto',
+  },
+  guestBadgeText: {
+    fontSize: 11,
+    color: '#555',
+    fontWeight: '500',
   },
 });
