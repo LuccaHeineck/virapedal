@@ -31,3 +31,10 @@ export function getAuthErrorMessage(error: AuthError): string {
 
   return message;
 }
+
+// Usado quando o navegador retorna do Google sem um `code` utilizável (ex.:
+// consentimento negado, ou a redirect URL não está na allow-list do Supabase).
+// Não há um AuthError do Supabase nesse caso, por isso é uma mensagem fixa.
+export function getOAuthRedirectErrorMessage(): string {
+  return 'Não foi possível entrar com o Google. Tente novamente.';
+}
