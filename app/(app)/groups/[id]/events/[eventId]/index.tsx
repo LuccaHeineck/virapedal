@@ -28,7 +28,14 @@ function formatTime(timeStr: string) {
   return timeStr.slice(0, 5);
 }
 
-function ParticipantRow({ participant }: { participant: EventParticipant }) {
+type ParticipantRowProps = {
+  participant: EventParticipant;
+  canRemove?: boolean;
+  onRemove?: () => void;
+  removing?: boolean;
+};
+
+function ParticipantRow({ participant, canRemove = false, onRemove, removing = false }: ParticipantRowProps) {
   const name = participant.users?.name ?? participant.guest_name ?? 'Usuário';
   const photoUrl = participant.users?.profile_photo_url ?? null;
   const isGuest = !participant.user_id;
@@ -49,6 +56,18 @@ function ParticipantRow({ participant }: { participant: EventParticipant }) {
         <View style={styles.guestBadge}>
           <Text style={styles.guestBadgeText}>Convidado</Text>
         </View>
+      ) : null}
+      {canRemove ? (
+        <TouchableOpacity
+          onPress={onRemove}
+          disabled={removing}
+          hitSlop={8}
+          accessibilityLabel={`Remover ${name} do pedal`}
+          accessibilityRole="button"
+          style={styles.removeParticipantButton}
+        >
+          <Ionicons name="trash-outline" size={20} color={colors.error} />
+        </TouchableOpacity>
       ) : null}
     </View>
   );
@@ -81,6 +100,7 @@ export default function EventDetail() {
     join,
     leave,
     addGuest,
+    removeParticipant,
     submitting,
     actionError,
   } = useEventParticipants(numericEventId);
@@ -165,6 +185,24 @@ export default function EventDetail() {
     }
   }
 
+  function confirmRemoveParticipant(participant: EventParticipant) {
+    const name = participant.users?.name ?? participant.guest_name ?? 'este participante';
+    const message = `Remover ${name} deste pedal?`;
+    const remove = () => removeParticipant(participant.id);
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(message)) {
+        remove();
+      }
+      return;
+    }
+
+    Alert.alert('Remover participante', message, [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Remover', style: 'destructive', onPress: remove },
+    ]);
+  }
+
   async function confirmAndDelete() {
     const ok = await deleteEvent();
     if (ok) {
@@ -199,7 +237,14 @@ export default function EventDetail() {
         contentContainerStyle={styles.content}
         data={registeredParticipants}
         keyExtractor={(item) => String(item.id)}
-        renderItem={({ item }) => <ParticipantRow participant={item} />}
+        renderItem={({ item }) => (
+          <ParticipantRow
+            participant={item}
+            canRemove={isCreator && item.user_id !== user?.id}
+            onRemove={() => confirmRemoveParticipant(item)}
+            removing={submitting}
+          />
+        )}
         ListHeaderComponent={
           <View style={styles.header}>
             <View style={styles.titleRow}>
@@ -281,7 +326,13 @@ export default function EventDetail() {
             <View style={styles.guestListContainer}>
               <Text style={styles.sectionTitle}>Convidados ({guestParticipants.length})</Text>
               {guestParticipants.map((item) => (
-                <ParticipantRow key={String(item.id)} participant={item} />
+                <ParticipantRow
+                  key={String(item.id)}
+                  participant={item}
+                  canRemove={isCreator}
+                  onRemove={() => confirmRemoveParticipant(item)}
+                  removing={submitting}
+                />
               ))}
             </View>
           ) : null
@@ -398,6 +449,10 @@ const styles = StyleSheet.create({
   participantName: {
     fontSize: 15,
     flexShrink: 1,
+  },
+  removeParticipantButton: {
+    marginLeft: 'auto',
+    padding: 4,
   },
   guestListContainer: {
     marginTop: 8,

@@ -376,6 +376,13 @@ CREATE POLICY "Update own participation or admin manages it"
         OR EXISTS (SELECT 1 FROM events e WHERE e.id = event_id AND is_group_admin(e.group_id, auth.uid()))
     );
 
+CREATE POLICY "Event creator removes participants"
+    ON event_participants FOR DELETE TO authenticated
+    USING (
+        user_id IS DISTINCT FROM auth.uid()
+        AND EXISTS (SELECT 1 FROM events e WHERE e.id = event_id AND e.created_by = auth.uid())
+    );
+
 -- --- event_photos ---
 CREATE POLICY "View photos of visible events"
     ON event_photos FOR SELECT TO authenticated

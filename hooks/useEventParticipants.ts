@@ -24,6 +24,7 @@ const GENERIC_LOAD_ERROR = 'Não foi possível carregar os participantes. Tente 
 const GENERIC_JOIN_ERROR = 'Não foi possível confirmar sua presença. Tente novamente.';
 const GENERIC_LEAVE_ERROR = 'Não foi possível sair do pedal. Tente novamente.';
 const GENERIC_GUEST_ERROR = 'Não foi possível adicionar o convidado. Tente novamente.';
+const GENERIC_REMOVE_ERROR = 'Não foi possível remover o participante. Tente novamente.';
 
 export function useEventParticipants(eventId: number) {
   const [participants, setParticipants] = useState<EventParticipant[]>([]);
@@ -171,6 +172,31 @@ export function useEventParticipants(eventId: number) {
     [eventId, fetchParticipants]
   );
 
+  const removeParticipant = useCallback(
+    async (participantId: number) => {
+      setSubmitting(true);
+      setActionError(null);
+
+      const { data, error: deleteError } = await supabase
+        .from('event_participants')
+        .delete()
+        .eq('id', participantId)
+        .eq('event_id', eventId)
+        .select('id')
+        .single();
+
+      setSubmitting(false);
+      if (deleteError || !data) {
+        setActionError(GENERIC_REMOVE_ERROR);
+        return false;
+      }
+
+      await fetchParticipants();
+      return true;
+    },
+    [eventId, fetchParticipants]
+  );
+
   return {
     participants,
     loading,
@@ -179,6 +205,7 @@ export function useEventParticipants(eventId: number) {
     join,
     leave,
     addGuest,
+    removeParticipant,
     submitting,
     actionError,
   };
