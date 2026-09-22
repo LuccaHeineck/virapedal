@@ -31,6 +31,7 @@ export function useEventParticipants(eventId: number) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [removingParticipantId, setRemovingParticipantId] = useState<number | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const fetchParticipants = useCallback(async () => {
@@ -174,7 +175,7 @@ export function useEventParticipants(eventId: number) {
 
   const removeParticipant = useCallback(
     async (participantId: number) => {
-      setSubmitting(true);
+      setRemovingParticipantId(participantId);
       setActionError(null);
 
       const { data, error: deleteError } = await supabase
@@ -183,9 +184,9 @@ export function useEventParticipants(eventId: number) {
         .eq('id', participantId)
         .eq('event_id', eventId)
         .select('id')
-        .single();
+        .maybeSingle();
 
-      setSubmitting(false);
+      setRemovingParticipantId(null);
       if (deleteError || !data) {
         setActionError(GENERIC_REMOVE_ERROR);
         return false;
@@ -207,6 +208,7 @@ export function useEventParticipants(eventId: number) {
     addGuest,
     removeParticipant,
     submitting,
+    removingParticipantId,
     actionError,
   };
 }
