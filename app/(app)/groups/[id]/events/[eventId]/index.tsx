@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Link, Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, FlatList, Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Button } from '../../../../../../components/Button';
 import { LoadingView } from '../../../../../../components/LoadingView';
 import { StatusText } from '../../../../../../components/StatusText';
@@ -28,7 +28,19 @@ function formatTime(timeStr: string) {
   return timeStr.slice(0, 5);
 }
 
-function ParticipantRow({ participant }: { participant: EventParticipant }) {
+type ParticipantRowProps = {
+  participant: EventParticipant;
+  canRemove?: boolean;
+  onRemove?: () => void;
+  removing?: boolean;
+};
+
+type DeleteConfirmation =
+  | { kind: 'event' }
+  | { kind: 'participant'; participant: EventParticipant }
+  | null;
+
+function ParticipantRow({ participant, canRemove = false, onRemove, removing = false }: ParticipantRowProps) {
   const name = participant.users?.name ?? participant.guest_name ?? 'Usuário';
   const photoUrl = participant.users?.profile_photo_url ?? null;
   const isGuest = !participant.user_id;
@@ -50,6 +62,22 @@ function ParticipantRow({ participant }: { participant: EventParticipant }) {
           <Text style={styles.guestBadgeText}>Convidado</Text>
         </View>
       ) : null}
+      {canRemove ? (
+        <TouchableOpacity
+          onPress={onRemove}
+          disabled={removing}
+          hitSlop={8}
+          accessibilityLabel={`Remover ${name} do pedal`}
+          accessibilityRole="button"
+          style={styles.removeParticipantButton}
+        >
+          {removing ? (
+            <ActivityIndicator size="small" color={colors.error} />
+          ) : (
+            <Ionicons name="trash-outline" size={19} color={colors.error} />
+          )}
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 }
@@ -61,6 +89,7 @@ export default function EventDetail() {
   const router = useRouter();
 
   const [guestName, setGuestName] = useState('');
+  const [deleteConfirmation, setDeleteConfirmation] = useState<DeleteConfirmation>(null);
 
   const { user } = useAuth();
   const { membership } = useGroup(groupId);
@@ -81,7 +110,9 @@ export default function EventDetail() {
     join,
     leave,
     addGuest,
+    removeParticipant,
     submitting,
+    removingParticipantId,
     actionError,
   } = useEventParticipants(numericEventId);
 
@@ -170,26 +201,27 @@ export default function EventDetail() {
     if (ok) {
       handleBack();
     }
+    return ok;
   }
 
-  function handleDelete() {
-    const message = 'Tem certeza que deseja excluir este pedal? Esta ação não pode ser desfeita.';
-
-    // Alert.alert com múltiplos botões não é suportado de forma confiável no
-    // React Native Web (0.21) -- no navegador ele não exibe nada. window.confirm
-    // é o equivalente nativo do browser para esse caso.
-    if (Platform.OS === 'web') {
-      if (window.confirm(message)) {
-        confirmAndDelete();
-      }
-      return;
+  async function handleConfirmDelete() {
+    if (deleteConfirmation?.kind === 'participant') {
+      await removeParticipant(deleteConfirmation.participant.id);
+      setDeleteConfirmation(null);
+    } else if (deleteConfirmation?.kind === 'event') {
+      const ok = await confirmAndDelete();
+      if (!ok) setDeleteConfirmation(null);
     }
-
-    Alert.alert('Excluir pedal', message, [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Excluir', style: 'destructive', onPress: confirmAndDelete },
-    ]);
   }
+
+  const participantBeingRemoved =
+    deleteConfirmation?.kind === 'participant' &&
+    removingParticipantId === deleteConfirmation.participant.id;
+  const confirmationLoading = deleting || participantBeingRemoved;
+  const confirmationName =
+    deleteConfirmation?.kind === 'participant'
+      ? deleteConfirmation.participant.users?.name ?? deleteConfirmation.participant.guest_name ?? 'este participante'
+      : null;
 
   return (
     <>
@@ -199,7 +231,14 @@ export default function EventDetail() {
         contentContainerStyle={styles.content}
         data={registeredParticipants}
         keyExtractor={(item) => String(item.id)}
-        renderItem={({ item }) => <ParticipantRow participant={item} />}
+        renderItem={({ item }) => (
+          <ParticipantRow
+            participant={item}
+            canRemove={isCreator && item.user_id !== user?.id}
+            onRemove={() => setDeleteConfirmation({ kind: 'participant', participant: item })}
+            removing={removingParticipantId === item.id}
+          />
+        )}
         ListHeaderComponent={
           <View style={styles.header}>
             <View style={styles.titleRow}>
@@ -227,8 +266,6 @@ export default function EventDetail() {
             {event.description ? <Text style={styles.description}>{event.description}</Text> : null}
             <Text style={styles.meta}>Criado por {event.creator_name}</Text>
 
-            {actionError ? <StatusText variant="error">{actionError}</StatusText> : null}
-
             <Button
               title={isParticipant || isCreator ? 'Sair' : 'Participar'}
               variant={isParticipant || isCreator ? 'destructive' : 'primary'}
@@ -244,8 +281,15 @@ export default function EventDetail() {
             ) : null}
 
             {canEdit ? (
-              <Button title="Excluir pedal" variant="destructive" onPress={handleDelete} loading={deleting} />
+              <Button
+                title="Excluir pedal"
+                variant="destructive"
+                onPress={() => setDeleteConfirmation({ kind: 'event' })}
+                loading={deleting}
+              />
             ) : null}
+
+            {actionError ? <StatusText variant="error">{actionError}</StatusText> : null}
             {deleteError ? <StatusText variant="error">{deleteError}</StatusText> : null}
 
             {canEdit ? (
@@ -281,7 +325,13 @@ export default function EventDetail() {
             <View style={styles.guestListContainer}>
               <Text style={styles.sectionTitle}>Convidados ({guestParticipants.length})</Text>
               {guestParticipants.map((item) => (
-                <ParticipantRow key={String(item.id)} participant={item} />
+                <ParticipantRow
+                  key={String(item.id)}
+                  participant={item}
+                  canRemove={isCreator}
+                  onRemove={() => setDeleteConfirmation({ kind: 'participant', participant: item })}
+                  removing={removingParticipantId === item.id}
+                />
               ))}
             </View>
           ) : null
@@ -294,6 +344,51 @@ export default function EventDetail() {
           )
         }
       />
+
+      <Modal
+        visible={deleteConfirmation !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => !confirmationLoading && setDeleteConfirmation(null)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.confirmationCard} accessibilityViewIsModal>
+            <View style={styles.confirmationIcon}>
+              <Ionicons name="trash-outline" size={25} color={colors.error} />
+            </View>
+            <Text style={styles.confirmationTitle}>
+              {deleteConfirmation?.kind === 'event' ? 'Excluir este pedal?' : 'Remover participante?'}
+            </Text>
+            <Text style={styles.confirmationMessage}>
+              {deleteConfirmation?.kind === 'event'
+                ? 'O pedal e seus dados serão excluídos permanentemente. Esta ação não pode ser desfeita.'
+                : `${confirmationName} será removido da lista deste pedal.`}
+            </Text>
+            <View style={styles.confirmationActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setDeleteConfirmation(null)}
+                disabled={confirmationLoading}
+              >
+                <Text style={styles.cancelButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.deleteButton]}
+                onPress={handleConfirmDelete}
+                disabled={confirmationLoading}
+              >
+                {confirmationLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.deleteButtonText}>
+                    {deleteConfirmation?.kind === 'event' ? 'Excluir pedal' : 'Remover'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </>
   );
 }
@@ -399,6 +494,14 @@ const styles = StyleSheet.create({
     fontSize: 15,
     flexShrink: 1,
   },
+  removeParticipantButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff1f0',
+  },
   guestListContainer: {
     marginTop: 8,
   },
@@ -407,11 +510,78 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 2,
-    marginLeft: 'auto',
   },
   guestBadgeText: {
     fontSize: 11,
     color: '#555',
     fontWeight: '500',
+  },
+  modalBackdrop: {
+    flex: 1,
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(17, 24, 39, 0.48)',
+  },
+  confirmationCard: {
+    width: '100%',
+    maxWidth: 440,
+    padding: 24,
+    borderRadius: 18,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+  },
+  confirmationIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff1f0',
+    marginBottom: 16,
+  },
+  confirmationTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+    textAlign: 'center',
+  },
+  confirmationMessage: {
+    marginTop: 8,
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#6b7280',
+    textAlign: 'center',
+  },
+  confirmationActions: {
+    width: '100%',
+    marginTop: 24,
+    flexDirection: 'row',
+    gap: 10,
+  },
+  modalButton: {
+    flex: 1,
+    minHeight: 46,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButton: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    backgroundColor: '#fff',
+  },
+  cancelButtonText: {
+    color: '#374151',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  deleteButton: {
+    backgroundColor: colors.error,
+  },
+  deleteButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
   },
 });
