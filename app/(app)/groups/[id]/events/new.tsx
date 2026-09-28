@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button } from '../../../../../components/Button';
+import { DateField } from '../../../../../components/DateField';
 import { StatusText } from '../../../../../components/StatusText';
 import { TextField } from '../../../../../components/TextField';
 import { colors } from '../../../../../constants/colors';
@@ -50,7 +51,7 @@ export default function NewGroupEvent() {
       return;
     }
     if (!DATE_SHAPE.test(eventDate.trim())) {
-      setValidationError('Use o formato AAAA-MM-DD para a data.');
+      setValidationError('Selecione uma data.');
       return;
     }
     if (!TIME_SHAPE.test(startTime.trim())) {
@@ -76,13 +77,7 @@ export default function NewGroupEvent() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <TextField label="Título do pedal" value={title} onChangeText={setTitle} placeholder="Ex: Pedal Noturno Estrela" editable={!submitting} />
-      <TextField
-        label="Data"
-        value={eventDate}
-        onChangeText={setEventDate}
-        placeholder="AAAA-MM-DD"
-        editable={!submitting}
-      />
+      <DateField label="Data" value={eventDate} onChange={setEventDate} disabled={submitting} />
       <TextField label="Horário de saída" value={startTime} onChangeText={setStartTime} placeholder="19:00" editable={!submitting} />
       <TextField
         label="Ponto de encontro"
