@@ -6,6 +6,7 @@ import { DateField } from '../../../../../../components/DateField';
 import { LoadingView } from '../../../../../../components/LoadingView';
 import { StatusText } from '../../../../../../components/StatusText';
 import { TextField } from '../../../../../../components/TextField';
+import { TimeField } from '../../../../../../components/TimeField';
 import { colors } from '../../../../../../constants/colors';
 import { useAuth } from '../../../../../../context/AuthContext';
 import { useEvent } from '../../../../../../hooks/useEvent';
@@ -77,7 +78,7 @@ export default function EditEvent() {
       return;
     }
     if (!TIME_SHAPE.test(startTime.trim())) {
-      setValidationError('Use o formato HH:MM para o horário.');
+      setValidationError('Selecione um horário.');
       return;
     }
     setValidationError(null);
@@ -100,7 +101,7 @@ export default function EditEvent() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <TextField label="Título do pedal" value={title} onChangeText={setTitle} placeholder="Ex: Pedal Noturno Estrela" editable={!submitting} />
       <DateField label="Data" value={eventDate} onChange={setEventDate} disabled={submitting} />
-      <TextField label="Horário de saída" value={startTime} onChangeText={setStartTime} placeholder="19:00" editable={!submitting} />
+      <TimeField label="Horário de saída" value={startTime} onChange={setStartTime} disabled={submitting} />
       <TextField
         label="Ponto de encontro"
         value={meetingPoint}

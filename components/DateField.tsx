@@ -83,6 +83,10 @@ export function DateField({ label, value, onChange, disabled }: DateFieldProps) 
           value={pendingDate}
           mode="date"
           display={Platform.OS === 'ios' ? 'inline' : 'default'}
+          // O picker nativo segue o tema do sistema: com o iPhone em modo
+          // escuro ele desenha o calendário em branco, que some contra o
+          // fundo claro da tela.
+          themeVariant="light"
           onChange={(event, selectedDate) => {
             if (Platform.OS === 'android') {
               // O diálogo do Android já se fecha sozinho após a escolha (ou
