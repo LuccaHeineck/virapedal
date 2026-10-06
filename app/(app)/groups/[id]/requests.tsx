@@ -1,5 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
-import { FlatList, Image, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { Avatar } from '../../../../components/Avatar';
 import { Button } from '../../../../components/Button';
 import { LoadingView } from '../../../../components/LoadingView';
 import { StatusText } from '../../../../components/StatusText';
@@ -49,13 +50,7 @@ export default function GroupJoinRequests() {
             const photoUrl = item.users?.profile_photo_url ?? null;
             return (
               <View style={styles.row}>
-                {photoUrl ? (
-                  <Image source={{ uri: photoUrl }} style={styles.avatar} />
-                ) : (
-                  <View style={styles.avatarPlaceholder}>
-                    <Text style={styles.avatarPlaceholderText}>{name.charAt(0).toUpperCase() || '?'}</Text>
-                  </View>
-                )}
+                <Avatar photo={photoUrl} name={name} size={44} />
                 <Text style={styles.name} numberOfLines={1}>
                   {name}
                 </Text>
@@ -108,24 +103,6 @@ const styles = StyleSheet.create({
   row: {
     gap: 8,
     paddingVertical: 12,
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.placeholder,
-  },
-  avatarPlaceholder: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarPlaceholderText: {
-    color: '#fff',
-    fontWeight: '600',
   },
   name: {
     fontSize: 15,

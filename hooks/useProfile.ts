@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
+import { AVATARS_BUCKET, getAvatarPath, isExternalPhotoUrl } from '../lib/avatars';
 import { supabase } from '../lib/supabase';
+import { PickedImage } from './useImageUpload';
 
 // Solução provisória escrita à mão até que os tipos reais sejam gerados via
 // `npx supabase gen types typescript` (ver lib/supabase.ts).
@@ -15,6 +17,7 @@ const PROFILE_COLUMNS = 'id, name, profile_photo_url, created_at, updated_at';
 
 const GENERIC_LOAD_ERROR = 'Não foi possível carregar seu perfil. Tente novamente.';
 const GENERIC_SAVE_ERROR = 'Não foi possível salvar suas alterações. Tente novamente.';
+const GENERIC_PHOTO_ERROR = 'Não foi possível atualizar sua foto. Tente novamente.';
 
 export function useProfile() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -82,5 +85,55 @@ export function useProfile() {
     return true;
   }, []);
 
-  return { profile, loading, error, refresh: fetchProfile, save };
+  // Envia a foto para um caminho novo e só então aponta profile_photo_url
+  // para ele; a foto anterior (se era um envio nosso, não a URL do Google) é
+  // removida depois. Retorna a mensagem de erro, ou null em caso de sucesso.
+  const updatePhoto = useCallback(
+    async (image: PickedImage): Promise<string | null> => {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData.user) {
+        return GENERIC_PHOTO_ERROR;
+      }
+
+      const previousPhoto = profile?.profile_photo_url ?? null;
+      const path = getAvatarPath(userData.user.id);
+
+      const response = await fetch(image.uri);
+      const arrayBuffer = await response.arrayBuffer();
+
+      const { error: uploadError } = await supabase.storage.from(AVATARS_BUCKET).upload(path, arrayBuffer, {
+        contentType: image.mimeType ?? 'image/jpeg',
+      });
+      if (uploadError) {
+        return GENERIC_PHOTO_ERROR;
+      }
+
+      const { data, error: updateError } = await supabase
+        .from('users')
+        .update({ profile_photo_url: path })
+        .eq('id', userData.user.id)
+        .select(PROFILE_COLUMNS)
+        .single<UserProfile>();
+
+      if (updateError || !data) {
+        // Limpeza best-effort do objeto recém-enviado que ficou órfão; uma
+        // falha aqui só deixa um arquivo sem referência no bucket.
+        await supabase.storage.from(AVATARS_BUCKET).remove([path]);
+        return GENERIC_PHOTO_ERROR;
+      }
+
+      setProfile(data);
+
+      if (previousPhoto && !isExternalPhotoUrl(previousPhoto)) {
+        // Best-effort: a foto nova já está salva; falhar em apagar a antiga
+        // só deixa um arquivo sem referência no bucket.
+        await supabase.storage.from(AVATARS_BUCKET).remove([previousPhoto]);
+      }
+
+      return null;
+    },
+    [profile]
+  );
+
+  return { profile, loading, error, refresh: fetchProfile, save, updatePhoto };
 }

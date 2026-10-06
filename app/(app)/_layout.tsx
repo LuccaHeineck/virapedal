@@ -105,10 +105,34 @@ export default function AppLayout() {
         name="profile"
         options={{
           title: 'Perfil',
+          // Pilha aninhada em app/(app)/profile/_layout.tsx tem seu próprio
+          // cabeçalho (com o botão de Configurações).
+          headerShown: false,
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? 'person' : 'person-outline'} color={color} size={size} />
           ),
         }}
+        // Mesmo tratamento das abas "Grupos" e "Rotas": tocar em "Perfil"
+        // estando em Configurações volta para o perfil.
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            e.preventDefault();
+
+            const profileRoute = navigation
+              .getState()
+              .routes.find((route: { name: string }) => route.name === 'profile');
+
+            if (profileRoute?.state && profileRoute.state.index !== 0) {
+              navigation.dispatch({
+                type: 'RESET',
+                payload: { index: 0, routes: [{ name: 'index' }] },
+                target: profileRoute.state.key,
+              });
+            } else {
+              navigation.navigate('profile', { screen: 'index' });
+            }
+          },
+        })}
       />
     </Tabs>
   );

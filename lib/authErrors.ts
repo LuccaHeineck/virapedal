@@ -13,6 +13,12 @@ export function getAuthErrorMessage(error: AuthError): string {
       return `Isso não parece ser um e-mail válido.`;
     case 'invalid_credentials':
       return 'E-mail ou senha incorretos.';
+    case 'otp_expired':
+      return 'Código inválido ou expirado.';
+    case 'same_password':
+      return 'A nova senha precisa ser diferente da atual.';
+    case 'over_email_send_rate_limit':
+      return 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
   }
 
   const lower = message.toLowerCase();

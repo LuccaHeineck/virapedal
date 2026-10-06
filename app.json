@@ -29,7 +29,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "O Virapedal usa suas fotos para definir a imagem de capa de um grupo."
+          "photosPermission": "O Virapedal usa suas fotos para definir sua foto de perfil, a capa de grupos e as fotos dos pedais."
         }
       ],
       "expo-web-browser",
