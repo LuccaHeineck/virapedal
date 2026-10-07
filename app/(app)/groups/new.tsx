@@ -1,5 +1,5 @@
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { Button } from '../../../components/Button';
 import { StatusText } from '../../../components/StatusText';
@@ -18,6 +18,21 @@ export default function NewGroup() {
   const [isPrivate, setIsPrivate] = useState(false);
   const [pickedImage, setPickedImage] = useState<PickedImage | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Esta tela sai com router.replace (ela vive na pilha da aba Grupos e
+  // precisa voltar para fora dela), e replace nao desmonta a tela: o
+  // useState sobrevive e o formulario reaparece preenchido na proxima
+  // abertura. Limpar ao ganhar foco garante formulario em branco a cada
+  // entrada.
+  useFocusEffect(
+    useCallback(() => {
+      setName('');
+      setDescription('');
+      setIsPrivate(false);
+      setPickedImage(null);
+      setSaveError(null);
+    }, [])
+  );
 
   const busy = submitting || picking || uploading;
   const canSubmit = name.trim().length > 0 && !busy;

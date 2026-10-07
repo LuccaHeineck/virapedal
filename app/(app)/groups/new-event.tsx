@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Stack, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { Stack, useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Button } from '../../../components/Button';
 import { LoadingView } from '../../../components/LoadingView';
@@ -33,6 +33,24 @@ export default function NewEvent() {
   const [routeDescription, setRouteDescription] = useState('');
   const [description, setDescription] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
+
+  // Esta tela sai com router.replace (ela vive na pilha da aba Grupos e
+  // precisa voltar para fora dela), e replace nao desmonta a tela: o
+  // useState sobrevive e o formulario reaparece preenchido na proxima
+  // abertura. Limpar ao ganhar foco garante formulario em branco a cada
+  // entrada.
+  useFocusEffect(
+    useCallback(() => {
+      setSelectedGroupId(null);
+      setTitle('');
+      setEventDate('');
+      setStartTime('');
+      setMeetingPoint('');
+      setRouteDescription('');
+      setDescription('');
+      setValidationError(null);
+    }, [])
+  );
 
   // Igual ao caso da tela de detalhe do pedal: esta tela vive na pilha da
   // aba Grupos (initialRouteName synthesiza "index" como destino de
