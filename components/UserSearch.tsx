@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { colors } from '../constants/colors';
 import { supabase } from '../lib/supabase';
+import { Avatar } from './Avatar';
 
 type SearchUser = {
   id: string;
@@ -97,13 +98,7 @@ export function UserSearch({ onSelectUser }: UserSearchProps) {
             accessibilityRole="button"
             accessibilityLabel={`Abrir perfil de ${item.name}`}
           >
-            {item.profile_photo_url ? (
-              <Image source={{ uri: item.profile_photo_url }} style={styles.avatar} />
-            ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Text style={styles.initial}>{item.name.charAt(0).toUpperCase() || '?'}</Text>
-              </View>
-            )}
+            <Avatar photo={item.profile_photo_url} name={item.name} size={44} />
             <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
             <Ionicons name="chevron-forward" size={20} color="#888" />
           </TouchableOpacity>
@@ -141,16 +136,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
-  avatar: { width: 44, height: 44, borderRadius: 22 },
-  avatarPlaceholder: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary,
-  },
-  initial: { color: '#fff', fontWeight: '600', fontSize: 18 },
   name: { flex: 1, fontSize: 16, fontWeight: '500' },
   empty: { paddingTop: 32, alignItems: 'center' },
   emptyText: { color: '#888', fontSize: 15, textAlign: 'center' },

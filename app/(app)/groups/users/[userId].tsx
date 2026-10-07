@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Avatar } from '../../../../components/Avatar';
 import { colors } from '../../../../constants/colors';
 import { supabase } from '../../../../lib/supabase';
 
@@ -16,7 +17,9 @@ export default function UserProfile() {
   const router = useRouter();
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [locked, setLocked] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const displayedProfile = profile?.id === userId ? profile : null;
 
   useEffect(() => {
     let active = true;
@@ -24,6 +27,7 @@ export default function UserProfile() {
     async function loadProfile() {
       setLoading(true);
       setError(null);
+      setLocked(false);
       setProfile(null);
 
       if (!userId) {
@@ -40,23 +44,12 @@ export default function UserProfile() {
 
       if (!active) return;
 
-      let foundProfile = queryError ? null : visibleProfile;
-      if (!foundProfile) {
-        // A leitura direta cobre colegas de grupo; a função expõe apenas os
-        // dados públicos dos demais usuários encontrados pela busca.
-        const { data: publicProfiles, error: publicError } = await supabase.rpc('get_public_user_profile', {
-          p_user_id: userId,
-        });
-        if (!active) return;
-        if (!publicError && Array.isArray(publicProfiles)) {
-          foundProfile = (publicProfiles[0] as PublicProfile | undefined) ?? null;
-        }
-      }
-
-      if (!foundProfile) {
-        setError('Perfil indisponível.');
+      if (queryError) {
+        setError('Não foi possível carregar o perfil. Tente novamente.');
+      } else if (!visibleProfile) {
+        setLocked(true);
       } else {
-        setProfile(foundProfile);
+        setProfile(visibleProfile);
       }
       setLoading(false);
     }
@@ -71,7 +64,7 @@ export default function UserProfile() {
     <>
       <Stack.Screen
         options={{
-          title: profile?.name ?? 'Perfil',
+          title: displayedProfile?.name ?? 'Perfil',
           ...(from === 'home-search'
             ? {
                 headerLeft: () => (
@@ -93,16 +86,17 @@ export default function UserProfile() {
           <ActivityIndicator size="large" />
         ) : error ? (
           <Text style={styles.message}>{error}</Text>
-        ) : profile ? (
+        ) : locked ? (
           <>
-            {profile.profile_photo_url ? (
-              <Image source={{ uri: profile.profile_photo_url }} style={styles.avatar} />
-            ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Text style={styles.initial}>{profile.name.charAt(0).toUpperCase() || '?'}</Text>
-              </View>
-            )}
-            <Text style={styles.name}>{profile.name}</Text>
+            <Ionicons name="lock-closed-outline" size={64} color="#666" />
+            <Text style={styles.message}>
+              Você e esta pessoa precisam fazer parte do mesmo grupo para visualizar o perfil.
+            </Text>
+          </>
+        ) : displayedProfile ? (
+          <>
+            <Avatar photo={displayedProfile.profile_photo_url} name={displayedProfile.name} size={96} />
+            <Text style={styles.name}>{displayedProfile.name}</Text>
           </>
         ) : null}
       </View>
@@ -119,16 +113,6 @@ const styles = StyleSheet.create({
     padding: 24,
     backgroundColor: colors.background,
   },
-  avatar: { width: 96, height: 96, borderRadius: 48 },
-  avatarPlaceholder: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary,
-  },
-  initial: { color: '#fff', fontSize: 36, fontWeight: '600' },
   name: { fontSize: 24, fontWeight: '600', textAlign: 'center' },
   message: { fontSize: 16, color: '#666', textAlign: 'center' },
 });

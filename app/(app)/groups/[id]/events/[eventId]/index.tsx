@@ -43,7 +43,8 @@ type DeleteConfirmation =
   | null;
 
 function ParticipantRow({ participant, canRemove = false, onRemove, onOpenProfile, removing = false }: ParticipantRowProps) {
-  const name = participant.users?.name ?? participant.guest_name ?? 'Usuário';
+  const restricted = participant.user_id !== null && participant.users === null;
+  const name = participant.users?.name ?? participant.guest_name ?? (restricted ? 'Perfil restrito' : 'Usuário');
   const photoUrl = participant.users?.profile_photo_url ?? null;
   const isGuest = !participant.user_id;
 
@@ -56,7 +57,13 @@ function ParticipantRow({ participant, canRemove = false, onRemove, onOpenProfil
         accessibilityRole={onOpenProfile ? 'button' : undefined}
         accessibilityLabel={onOpenProfile ? `Abrir perfil de ${name}` : undefined}
       >
-        <Avatar photo={photoUrl} name={name} size={40} />
+        {restricted ? (
+          <View style={styles.avatarPlaceholder}>
+            <Ionicons name="lock-closed-outline" size={20} color="#fff" />
+          </View>
+        ) : (
+          <Avatar photo={photoUrl} name={name} size={40} />
+        )}
         <Text style={styles.participantName} numberOfLines={1}>
           {name}
         </Text>
@@ -500,6 +507,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+  },
+  avatarPlaceholder: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   participantName: {
     fontSize: 15,

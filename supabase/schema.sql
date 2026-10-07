@@ -275,12 +275,37 @@ GRANT EXECUTE ON FUNCTION is_group_member(BIGINT, UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION is_group_admin(BIGINT, UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION can_view_event(BIGINT, UUID) TO authenticated;
 
--- Busca de pessoas: somente identificador, nome e foto ficam disponíveis para usuários autenticados.
+CREATE FUNCTION public.can_view_user_profile(p_user_id uuid)
+RETURNS boolean
+LANGUAGE sql SECURITY DEFINER SET search_path = '' STABLE
+AS $$
+    SELECT auth.uid() IS NOT NULL
+      AND p_user_id IS NOT NULL
+      AND (
+        p_user_id = auth.uid()
+        OR EXISTS (
+            SELECT 1
+            FROM public.group_members mine
+            JOIN public.group_members theirs ON theirs.group_id = mine.group_id
+            WHERE mine.user_id = auth.uid()
+              AND theirs.user_id = p_user_id
+              AND mine.left_at IS NULL
+              AND theirs.left_at IS NULL
+        )
+      );
+$$;
+
+REVOKE ALL ON FUNCTION public.can_view_user_profile(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.can_view_user_profile(uuid) TO authenticated;
+
+-- A busca encontra pessoas sem grupo em comum, mas não expõe a foto delas.
 CREATE FUNCTION public.search_users(p_query text)
 RETURNS TABLE (id uuid, name text, profile_photo_url text)
 LANGUAGE sql SECURITY DEFINER SET search_path = '' STABLE
 AS $$
-    SELECT u.id, u.name::text, u.profile_photo_url::text
+    SELECT u.id, u.name::text,
+      CASE WHEN public.can_view_user_profile(u.id)
+        THEN u.profile_photo_url::text ELSE NULL::text END
     FROM public.users AS u
     WHERE auth.uid() IS NOT NULL
       AND char_length(btrim(p_query)) BETWEEN 2 AND 100
@@ -301,7 +326,7 @@ LANGUAGE sql SECURITY DEFINER SET search_path = '' STABLE
 AS $$
     SELECT u.id, u.name::text, u.profile_photo_url::text
     FROM public.users AS u
-    WHERE auth.uid() IS NOT NULL
+    WHERE public.can_view_user_profile(u.id)
       AND u.id = p_user_id
     LIMIT 1;
 $$;
@@ -330,25 +355,7 @@ CREATE POLICY "View own profile"
 
 CREATE POLICY "View profiles of groupmates"
     ON users FOR SELECT TO authenticated
-    USING (
-        EXISTS (
-            SELECT 1 FROM group_members gm1
-            JOIN group_members gm2 ON gm1.group_id = gm2.group_id
-            WHERE gm1.user_id = auth.uid() AND gm1.left_at IS NULL
-              AND gm2.user_id = users.id AND gm2.left_at IS NULL
-        )
-    );
-
-CREATE POLICY "View profiles of participants in visible events"
-    ON users FOR SELECT TO authenticated
-    USING (
-        EXISTS (
-            SELECT 1 FROM event_participants ep
-            WHERE ep.user_id = users.id
-              AND ep.status <> 'cancelled'
-              AND can_view_event(ep.event_id, auth.uid())
-        )
-    );
+    USING (public.can_view_user_profile(id));
 
 CREATE POLICY "Update own profile"
     ON users FOR UPDATE TO authenticated
