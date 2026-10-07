@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 import { colors } from '../constants/colors';
 import { EventStatus, EVENT_STATUS_LABELS } from '../hooks/useGroupEvents';
+import { isPastEventDate } from '../lib/eventDates';
 import { GroupImage } from './GroupImage';
 
 function formatDate(dateStr: string) {
@@ -13,9 +14,12 @@ function formatTime(timeStr: string) {
   return timeStr.slice(0, 5);
 }
 
+// 'completed' usa cinza neutro de proposito: verde fica reservado ao badge
+// de "Participando", que significa outra coisa -- dois badges verdes na
+// mesma linha confundiam a leitura.
 const STATUS_COLORS: Record<EventStatus, { background: string; text: string }> = {
   scheduled: { background: '#e3ecfd', text: colors.primary },
-  completed: { background: '#e1f3e8', text: colors.success },
+  completed: { background: '#d9d9d9', text: '#3f3f3f' },
   cancelled: { background: '#f5e2e0', text: colors.error },
 };
 
@@ -33,7 +37,12 @@ type EventRowProps = {
 };
 
 export function EventRow({ title, status, eventDate, startTime, meetingPoint, groupName, groupImagePath, isParticipant }: EventRowProps) {
-  const statusColors = STATUS_COLORS[status];
+  // 'cancelled' e 'completed' vindos do banco mandam; so um pedal ainda
+  // 'scheduled' cuja data ja passou e promovido a concluido na exibicao --
+  // assim um pedal cancelado no passado nao aparece como se tivesse rolado.
+  const effectiveStatus: EventStatus =
+    status === 'scheduled' && isPastEventDate(eventDate) ? 'completed' : status;
+  const statusColors = STATUS_COLORS[effectiveStatus];
 
   return (
     <View style={styles.container}>
@@ -44,9 +53,9 @@ export function EventRow({ title, status, eventDate, startTime, meetingPoint, gr
           <Text style={styles.title} numberOfLines={1}>
             {title}
           </Text>
-          {status !== 'scheduled' ? (
-            <View style={[styles.badge, { backgroundColor: statusColors.background }]}>
-              <Text style={[styles.badgeText, { color: statusColors.text }]}>{EVENT_STATUS_LABELS[status]}</Text>
+          {effectiveStatus !== 'scheduled' ? (
+            <View style={[styles.badge, styles.statusBadge, { backgroundColor: statusColors.background }]}>
+              <Text style={[styles.badgeText, { color: statusColors.text }]}>{EVENT_STATUS_LABELS[effectiveStatus]}</Text>
             </View>
           ) : null}
         </View>
@@ -120,6 +129,12 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 2,
+  },
+  // Empurra o badge para a borda direita: sem isto ele fica colado ao fim
+  // do titulo e a coluna de badges vira um serrilhado, porque cada pedal
+  // tem um nome de tamanho diferente.
+  statusBadge: {
+    marginLeft: 'auto',
   },
   badgeText: {
     fontSize: 12,

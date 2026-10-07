@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Link, Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Avatar } from '../../../../../../components/Avatar';
 import { Button } from '../../../../../../components/Button';
 import { LoadingView } from '../../../../../../components/LoadingView';
 import { StatusText } from '../../../../../../components/StatusText';
@@ -55,13 +56,7 @@ function ParticipantRow({ participant, canRemove = false, onRemove, onOpenProfil
         accessibilityRole={onOpenProfile ? 'button' : undefined}
         accessibilityLabel={onOpenProfile ? `Abrir perfil de ${name}` : undefined}
       >
-        {photoUrl ? (
-          <Image source={{ uri: photoUrl }} style={styles.avatar} />
-        ) : (
-          <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarPlaceholderText}>{name.charAt(0).toUpperCase() || '?'}</Text>
-          </View>
-        )}
+        <Avatar photo={photoUrl} name={name} size={40} />
         <Text style={styles.participantName} numberOfLines={1}>
           {name}
         </Text>
@@ -139,13 +134,21 @@ export default function EventDetail() {
   // origem vem explícita via ?from= no link, e o botão de voltar é
   // controlled aqui em vez de depender do histórico nativo da pilha.
   const handleBack = useCallback(() => {
-    if (from === 'home') {
-      router.replace('/');
-    } else if (from === 'profile') {
-      router.replace('/profile');
-    } else {
-      router.replace(`/groups/${groupId}/events`);
+    // Sair para outra aba com replace nao remove esta tela da pilha de
+    // Grupos: ela fica pendurada no topo, e o proximo modal aberto ali (o
+    // "+" da Home) aparece com este pedal visivel por baixo. dismissAll()
+    // faz popToTop antes de trocar de aba. No caso de voltar para a lista
+    // de pedais do proprio grupo o replace ja basta, porque a troca
+    // acontece dentro da mesma pilha.
+    if (from === 'home' || from === 'profile') {
+      if (router.canDismiss()) {
+        router.dismissAll();
+      }
+      router.replace(from === 'home' ? '/' : '/profile');
+      return;
     }
+
+    router.replace(`/groups/${groupId}/events`);
   }, [router, from, groupId]);
 
   const backButton = (
@@ -205,21 +208,22 @@ export default function EventDetail() {
     }
   }
 
-  async function confirmAndDelete() {
-    const ok = await deleteEvent();
-    if (ok) {
-      handleBack();
-    }
-    return ok;
-  }
-
   async function handleConfirmDelete() {
     if (deleteConfirmation?.kind === 'participant') {
       await removeParticipant(deleteConfirmation.participant.id);
       setDeleteConfirmation(null);
-    } else if (deleteConfirmation?.kind === 'event') {
-      const ok = await confirmAndDelete();
-      if (!ok) setDeleteConfirmation(null);
+      return;
+    }
+
+    if (deleteConfirmation?.kind === 'event') {
+      const ok = await deleteEvent();
+      // Fecha o diálogo sempre, e antes de navegar: esta tela continua
+      // montada na pilha da aba Grupos depois do handleBack(), então um
+      // Modal deixado visível fica sobreposto na tela de destino.
+      setDeleteConfirmation(null);
+      if (ok) {
+        handleBack();
+      }
     }
   }
 
@@ -496,24 +500,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.placeholder,
-  },
-  avatarPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarPlaceholderText: {
-    color: '#fff',
-    fontWeight: '600',
   },
   participantName: {
     fontSize: 15,

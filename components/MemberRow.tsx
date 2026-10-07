@@ -1,6 +1,7 @@
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '../constants/colors';
 import { GroupMemberRow } from '../hooks/useGroupMembers';
+import { Avatar } from './Avatar';
 
 type MemberRowProps = {
   member: GroupMemberRow;
@@ -15,13 +16,7 @@ export function MemberRow({ member, isViewerAdmin, onToggleRole, onRemove }: Mem
 
   return (
     <View style={styles.container}>
-      {photoUrl ? (
-        <Image source={{ uri: photoUrl }} style={styles.avatar} />
-      ) : (
-        <View style={styles.avatarPlaceholder}>
-          <Text style={styles.avatarPlaceholderText}>{name.charAt(0).toUpperCase() || '?'}</Text>
-        </View>
-      )}
+      <Avatar photo={photoUrl} name={name} size={44} />
 
       <View style={styles.info}>
         <Text style={styles.name} numberOfLines={1}>
@@ -50,24 +45,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     paddingVertical: 12,
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.placeholder,
-  },
-  avatarPlaceholder: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarPlaceholderText: {
-    color: '#fff',
-    fontWeight: '600',
   },
   info: {
     flex: 1,

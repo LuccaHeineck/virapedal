@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { todayDateString } from '../lib/eventDates';
 import { EventStatus } from './useGroupEvents';
 
 // Solução provisória escrita à mão até que os tipos reais sejam gerados via
@@ -20,14 +21,6 @@ export type UpcomingEvent = {
 };
 
 const GENERIC_LOAD_ERROR = 'Não foi possível carregar os pedais. Tente novamente.';
-
-function todayDateString() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
 
 export function useUpcomingEvents() {
   const [events, setEvents] = useState<UpcomingEvent[]>([]);
