@@ -50,7 +50,7 @@ export default function Home() {
       <View style={styles.container}>
         {searchOpen ? (
           <View style={styles.headerRow}>
-            <Text style={styles.title}>Pesquisar usuários</Text>
+            <Text style={[styles.title, styles.searchTitle]}>Pesquisar usuários</Text>
             <TouchableOpacity
               style={styles.headerAction}
               onPress={() => setSearchOpen(false)}
@@ -139,6 +139,8 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '600',
+  },
+  searchTitle: {
     flex: 1,
   },
   headerRow: {
