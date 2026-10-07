@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { EventRow } from '../../components/EventRow';
 import { LoadingView } from '../../components/LoadingView';
+import { PedalSearch } from '../../components/PedalSearch';
 import { StatusText } from '../../components/StatusText';
 import { UserSearch } from '../../components/UserSearch';
 import { colors } from '../../constants/colors';
@@ -14,6 +15,7 @@ import { subscribeHomeRefresh } from '../../lib/homeRefreshEmitter';
 export default function Home() {
   const router = useRouter();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchSection, setSearchSection] = useState<'users' | 'events'>('users');
   const { user } = useAuth();
   const name = typeof user?.user_metadata?.name === 'string' ? user.user_metadata.name : undefined;
 
@@ -39,7 +41,7 @@ export default function Home() {
                 style={[styles.headerAction, styles.navigationAction]}
                 onPress={() => setSearchOpen(true)}
                 accessibilityRole="button"
-                accessibilityLabel="Pesquisar usuários"
+                accessibilityLabel="Pesquisar pessoas e pedais"
                 hitSlop={8}
               >
                 <Ionicons name="search-outline" size={25} color={colors.primary} />
@@ -50,12 +52,12 @@ export default function Home() {
       <View style={styles.container}>
         {searchOpen ? (
           <View style={styles.headerRow}>
-            <Text style={[styles.title, styles.searchTitle]}>Pesquisar usuários</Text>
+            <Text style={[styles.title, styles.searchTitle]}>Pesquisar no Virapedal</Text>
             <TouchableOpacity
               style={styles.headerAction}
               onPress={() => setSearchOpen(false)}
               accessibilityRole="button"
-              accessibilityLabel="Fechar busca de usuários"
+              accessibilityLabel="Fechar busca"
               hitSlop={8}
             >
               <Ionicons name="close" size={25} color={colors.primary} />
@@ -68,14 +70,38 @@ export default function Home() {
         )}
 
       {searchOpen ? (
-        <UserSearch
-          onSelectUser={(userId) =>
-            router.push({
-              pathname: '/groups/users/[userId]',
-              params: { userId, from: 'home-search' },
-            })
-          }
-        />
+        <>
+          <View style={styles.searchSections}>
+            <TouchableOpacity
+              style={[styles.searchSection, searchSection === 'users' && styles.searchSectionActive]}
+              onPress={() => setSearchSection('users')}
+              accessibilityRole="button"
+              accessibilityState={{ selected: searchSection === 'users' }}
+            >
+              <Text style={[styles.searchSectionText, searchSection === 'users' && styles.searchSectionTextActive]}>Pessoas</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.searchSection, searchSection === 'events' && styles.searchSectionActive]}
+              onPress={() => setSearchSection('events')}
+              accessibilityRole="button"
+              accessibilityState={{ selected: searchSection === 'events' }}
+            >
+              <Text style={[styles.searchSectionText, searchSection === 'events' && styles.searchSectionTextActive]}>Pedais</Text>
+            </TouchableOpacity>
+          </View>
+          {searchSection === 'users' ? (
+            <UserSearch
+              onSelectUser={(userId) =>
+                router.push({
+                  pathname: '/groups/users/[userId]',
+                  params: { userId, from: 'home-search' },
+                })
+              }
+            />
+          ) : (
+            <PedalSearch onSelectPedal={(groupId, eventId) => router.push(`/groups/${groupId}/events/${eventId}?from=home`)} />
+          )}
+        </>
       ) : (
         <>
           {loading ? (
@@ -142,6 +168,27 @@ const styles = StyleSheet.create({
   },
   searchTitle: {
     flex: 1,
+  },
+  searchSections: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  searchSection: {
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 999,
+    backgroundColor: colors.placeholder,
+  },
+  searchSectionActive: {
+    backgroundColor: colors.primary,
+  },
+  searchSectionText: {
+    color: '#555',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  searchSectionTextActive: {
+    color: '#fff',
   },
   headerRow: {
     flexDirection: 'row',
