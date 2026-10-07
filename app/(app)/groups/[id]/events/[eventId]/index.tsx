@@ -196,21 +196,22 @@ export default function EventDetail() {
     }
   }
 
-  async function confirmAndDelete() {
-    const ok = await deleteEvent();
-    if (ok) {
-      handleBack();
-    }
-    return ok;
-  }
-
   async function handleConfirmDelete() {
     if (deleteConfirmation?.kind === 'participant') {
       await removeParticipant(deleteConfirmation.participant.id);
       setDeleteConfirmation(null);
-    } else if (deleteConfirmation?.kind === 'event') {
-      const ok = await confirmAndDelete();
-      if (!ok) setDeleteConfirmation(null);
+      return;
+    }
+
+    if (deleteConfirmation?.kind === 'event') {
+      const ok = await deleteEvent();
+      // Fecha o diálogo sempre, e antes de navegar: esta tela continua
+      // montada na pilha da aba Grupos depois do handleBack(), então um
+      // Modal deixado visível fica sobreposto na tela de destino.
+      setDeleteConfirmation(null);
+      if (ok) {
+        handleBack();
+      }
     }
   }
 
