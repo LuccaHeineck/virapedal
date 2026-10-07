@@ -27,7 +27,11 @@ BEGIN
     VALUES (
         NEW.id,
         COALESCE(NEW.raw_user_meta_data->>'name', NEW.raw_user_meta_data->>'full_name', 'New rider'),
-        COALESCE(NEW.raw_user_meta_data->>'profile_photo_url', NEW.raw_user_meta_data->>'avatar_url')
+        COALESCE(
+            NEW.raw_user_meta_data->>'profile_photo_url',
+            NEW.raw_user_meta_data->>'avatar_url',
+            NEW.raw_user_meta_data->>'picture'
+        )
     );
     RETURN NEW;
 END;
@@ -36,6 +40,25 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+
+-- Linking a Google identity to an existing account is an UPDATE on auth.users,
+-- so handle_new_user never sees it. Fill the photo only when none is set, so a
+-- user-chosen photo is never overwritten on later Google sign-ins.
+CREATE FUNCTION handle_user_metadata_update()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE public.users
+    SET profile_photo_url = COALESCE(NEW.raw_user_meta_data->>'avatar_url', NEW.raw_user_meta_data->>'picture')
+    WHERE id = NEW.id
+      AND profile_photo_url IS NULL
+      AND COALESCE(NEW.raw_user_meta_data->>'avatar_url', NEW.raw_user_meta_data->>'picture') IS NOT NULL;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
+
+CREATE TRIGGER on_auth_user_metadata_updated
+    AFTER UPDATE OF raw_user_meta_data ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION handle_user_metadata_update();
 
 CREATE TABLE groups (
     id           BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

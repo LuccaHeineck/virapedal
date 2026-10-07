@@ -8,7 +8,7 @@ SplashScreen.preventAutoHideAsync();
 WebBrowser.maybeCompleteAuthSession();
 
 function RootNavigator() {
-  const { session, loading } = useAuth();
+  const { session, loading, passwordRecovery } = useAuth();
 
   useEffect(() => {
     if (!loading) {
@@ -22,7 +22,7 @@ function RootNavigator() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Protected guard={!!session}>
+      <Stack.Protected guard={!!session && !passwordRecovery}>
         <Stack.Screen name="(app)" />
         {/* Acionada pelo "+" da Home. Fica na pilha raiz, e nao dentro da
             aba Grupos, para nao empilhar em cima do que estiver aberto la
@@ -33,7 +33,7 @@ function RootNavigator() {
           options={{ title: 'Novo pedal', presentation: 'modal', headerShown: true }}
         />
       </Stack.Protected>
-      <Stack.Protected guard={!session}>
+      <Stack.Protected guard={!session || passwordRecovery}>
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
     </Stack>

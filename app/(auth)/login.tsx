@@ -93,6 +93,10 @@ export default function Login() {
         editable={!submitting}
       />
 
+      <Link href="/forgot-password" style={styles.forgotLink}>
+        Esqueceu sua senha?
+      </Link>
+
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <TouchableOpacity
@@ -147,6 +151,10 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  forgotLink: {
+    alignSelf: 'flex-end',
+    color: '#2f6feb',
   },
   link: {
     marginTop: 16,
