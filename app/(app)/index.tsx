@@ -70,7 +70,7 @@ export default function Home() {
 
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => router.push('/groups/new-event')}
+        onPress={() => router.push('/new-event')}
         accessibilityLabel="Criar pedal"
         accessibilityRole="button">
         <Ionicons name="add" size={28} color="#fff" />

@@ -71,6 +71,12 @@ export default function NewGroup() {
       // de uma imagem opcional.
     }
 
+    // Mesmo motivo de new-event.tsx: esta tela e um modal da pilha de
+    // Grupos, e replace sozinho a deixaria pendurada, fazendo as telas
+    // abertas depois herdarem o contexto de modal no iOS.
+    if (router.canDismiss()) {
+      router.dismissAll();
+    }
     router.replace(`/groups/${group.id}`);
   }
 

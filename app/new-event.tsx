@@ -2,15 +2,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Button } from '../../../components/Button';
-import { LoadingView } from '../../../components/LoadingView';
-import { StatusText } from '../../../components/StatusText';
-import { DateField } from '../../../components/DateField';
-import { TextField } from '../../../components/TextField';
-import { TimeField } from '../../../components/TimeField';
-import { colors } from '../../../constants/colors';
-import { useCreateEvent } from '../../../hooks/useCreateEvent';
-import { useGroups } from '../../../hooks/useGroups';
+import { Button } from '../components/Button';
+import { LoadingView } from '../components/LoadingView';
+import { StatusText } from '../components/StatusText';
+import { DateField } from '../components/DateField';
+import { TextField } from '../components/TextField';
+import { TimeField } from '../components/TimeField';
+import { colors } from '../constants/colors';
+import { useCreateEvent } from '../hooks/useCreateEvent';
+import { useGroups } from '../hooks/useGroups';
 
 const DATE_SHAPE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_SHAPE = /^\d{2}:\d{2}$/;
@@ -34,11 +34,11 @@ export default function NewEvent() {
   const [description, setDescription] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  // Esta tela sai com router.replace (ela vive na pilha da aba Grupos e
-  // precisa voltar para fora dela), e replace nao desmonta a tela: o
-  // useState sobrevive e o formulario reaparece preenchido na proxima
-  // abertura. Limpar ao ganhar foco garante formulario em branco a cada
-  // entrada.
+  // Rede de seguranca: hoje a tela sai com back(), que a desempilha e
+  // desmonta, entao o estado ja morreria junto. Mas basta alguem trocar a
+  // saida por replace (como era antes) para o useState sobreviver e o
+  // formulario reabrir preenchido -- limpar ao ganhar foco garante
+  // formulario em branco independente de como se sai daqui.
   useFocusEffect(
     useCallback(() => {
       setSelectedGroupId(null);
@@ -52,17 +52,16 @@ export default function NewEvent() {
     }, [])
   );
 
-  // Igual ao caso da tela de detalhe do pedal: esta tela vive na pilha da
-  // aba Grupos (initialRouteName synthesiza "index" como destino de
-  // voltar), e o próprio pop nativo pode cair numa tela de pedal antiga
-  // ainda empilhada de uma navegação anterior. Única entrada hoje é o "+"
-  // da Home, então voltar sempre vai pra lá, não depende do histórico.
+  // Modal da pilha raiz (registrado em app/_layout.tsx), entao back()
+  // simplesmente o desempilha e devolve a aba de onde veio -- sem truque
+  // de replace/dismissAll, que so eram necessarios quando esta tela morava
+  // dentro da pilha da aba Grupos.
   const backButton = (
     <Stack.Screen
       options={{
         headerLeft: () => (
           <TouchableOpacity
-            onPress={() => router.replace('/')}
+            onPress={() => router.back()}
             hitSlop={8}
             accessibilityLabel="Voltar"
             accessibilityRole="button">
@@ -129,12 +128,8 @@ export default function NewEvent() {
       routeDescription: routeDescription.trim().length > 0 ? routeDescription.trim() : null,
     });
 
-    // Aberta a partir da Home (única entrada hoje), então volta pra lá em
-    // vez de router.back() -- essa tela vive dentro da pilha da aba
-    // Grupos, cujo initialRouteName synthesiza "index" (lista de grupos)
-    // como destino de voltar, não a Home de onde realmente se veio.
     if (ok) {
-      router.replace('/');
+      router.back();
     }
   }
 

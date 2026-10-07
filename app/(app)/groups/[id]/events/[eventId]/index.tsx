@@ -130,13 +130,21 @@ export default function EventDetail() {
   // origem vem explícita via ?from= no link, e o botão de voltar é
   // controlled aqui em vez de depender do histórico nativo da pilha.
   const handleBack = useCallback(() => {
-    if (from === 'home') {
-      router.replace('/');
-    } else if (from === 'profile') {
-      router.replace('/profile');
-    } else {
-      router.replace(`/groups/${groupId}/events`);
+    // Sair para outra aba com replace nao remove esta tela da pilha de
+    // Grupos: ela fica pendurada no topo, e o proximo modal aberto ali (o
+    // "+" da Home) aparece com este pedal visivel por baixo. dismissAll()
+    // faz popToTop antes de trocar de aba. No caso de voltar para a lista
+    // de pedais do proprio grupo o replace ja basta, porque a troca
+    // acontece dentro da mesma pilha.
+    if (from === 'home' || from === 'profile') {
+      if (router.canDismiss()) {
+        router.dismissAll();
+      }
+      router.replace(from === 'home' ? '/' : '/profile');
+      return;
     }
+
+    router.replace(`/groups/${groupId}/events`);
   }, [router, from, groupId]);
 
   const backButton = (
