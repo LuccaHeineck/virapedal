@@ -1,6 +1,7 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '../../../../constants/colors';
 import { supabase } from '../../../../lib/supabase';
 
@@ -11,7 +12,8 @@ type PublicProfile = {
 };
 
 export default function UserProfile() {
-  const { userId } = useLocalSearchParams<{ userId: string }>();
+  const { userId, from } = useLocalSearchParams<{ userId: string; from?: string }>();
+  const router = useRouter();
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +32,7 @@ export default function UserProfile() {
         return;
       }
 
-      const { data, error: queryError } = await supabase
+      const { data: visibleProfile, error: queryError } = await supabase
         .from('users')
         .select('id, name, profile_photo_url')
         .eq('id', userId)
@@ -38,10 +40,23 @@ export default function UserProfile() {
 
       if (!active) return;
 
-      if (queryError || !data) {
+      let foundProfile = queryError ? null : visibleProfile;
+      if (!foundProfile) {
+        // A leitura direta cobre colegas de grupo; a função expõe apenas os
+        // dados públicos dos demais usuários encontrados pela busca.
+        const { data: publicProfiles, error: publicError } = await supabase.rpc('get_public_user_profile', {
+          p_user_id: userId,
+        });
+        if (!active) return;
+        if (!publicError && Array.isArray(publicProfiles)) {
+          foundProfile = (publicProfiles[0] as PublicProfile | undefined) ?? null;
+        }
+      }
+
+      if (!foundProfile) {
         setError('Perfil indisponível.');
       } else {
-        setProfile(data);
+        setProfile(foundProfile);
       }
       setLoading(false);
     }
@@ -54,7 +69,25 @@ export default function UserProfile() {
 
   return (
     <>
-      <Stack.Screen options={{ title: profile?.name ?? 'Perfil' }} />
+      <Stack.Screen
+        options={{
+          title: profile?.name ?? 'Perfil',
+          ...(from === 'home-search'
+            ? {
+                headerLeft: () => (
+                  <TouchableOpacity
+                    onPress={() => router.replace('/')}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel="Voltar para a busca"
+                  >
+                    <Ionicons name="chevron-back" size={26} color={colors.primary} />
+                  </TouchableOpacity>
+                ),
+              }
+            : {}),
+        }}
+      />
       <View style={styles.container}>
         {loading ? (
           <ActivityIndicator size="large" />

@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Link, useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { EventRow } from '../../components/EventRow';
 import { LoadingView } from '../../components/LoadingView';
 import { StatusText } from '../../components/StatusText';
+import { UserSearch } from '../../components/UserSearch';
 import { colors } from '../../constants/colors';
 import { useAuth } from '../../context/AuthContext';
 import { useUpcomingEvents } from '../../hooks/useUpcomingEvents';
@@ -12,6 +13,7 @@ import { subscribeHomeRefresh } from '../../lib/homeRefreshEmitter';
 
 export default function Home() {
   const router = useRouter();
+  const [searchOpen, setSearchOpen] = useState(false);
   const { user } = useAuth();
   const name = typeof user?.user_metadata?.name === 'string' ? user.user_metadata.name : undefined;
 
@@ -29,52 +31,78 @@ export default function Home() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{name ? `Olá, ${name}` : 'Bem-vindo ao Virapedal'}</Text>
+      <View style={styles.headerRow}>
+        <Text style={styles.title} numberOfLines={1}>
+          {searchOpen ? 'Pesquisar usuários' : name ? `Olá, ${name}` : 'Bem-vindo ao Virapedal'}
+        </Text>
+        <TouchableOpacity
+          style={styles.headerAction}
+          onPress={() => setSearchOpen((open) => !open)}
+          accessibilityRole="button"
+          accessibilityLabel={searchOpen ? 'Fechar busca de usuários' : 'Pesquisar usuários'}
+          hitSlop={8}
+        >
+          <Ionicons name={searchOpen ? 'close' : 'search-outline'} size={25} color={colors.primary} />
+        </TouchableOpacity>
+      </View>
 
-      {loading ? (
-        <LoadingView />
-      ) : error ? (
-        <View style={styles.centered}>
-          <StatusText variant="error">{error}</StatusText>
-        </View>
-      ) : (
-        <FlatList
-          style={styles.list}
-          data={events}
-          keyExtractor={(item) => String(item.id)}
-          contentContainerStyle={styles.listContent}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
-          renderItem={({ item }) => (
-            <Link href={`/groups/${item.group_id}/events/${item.id}?from=home`} asChild>
-              <TouchableOpacity>
-                <EventRow
-                  title={item.title}
-                  status={item.status}
-                  eventDate={item.event_date}
-                  startTime={item.start_time}
-                  meetingPoint={item.meeting_point}
-                  groupName={item.group_name}
-                  groupImagePath={item.group_image_url}
-                  isParticipant={item.is_participant}
-                />
-              </TouchableOpacity>
-            </Link>
-          )}
-          ListEmptyComponent={
-            <View style={styles.centered}>
-              <Text style={styles.emptyText}>Nenhum pedal agendado nos seus grupos.</Text>
-            </View>
+      {searchOpen ? (
+        <UserSearch
+          onSelectUser={(userId) =>
+            router.push({
+              pathname: '/groups/users/[userId]',
+              params: { userId, from: 'home-search' },
+            })
           }
         />
-      )}
+      ) : (
+        <>
+          {loading ? (
+            <LoadingView />
+          ) : error ? (
+            <View style={styles.centered}>
+              <StatusText variant="error">{error}</StatusText>
+            </View>
+          ) : (
+            <FlatList
+              style={styles.list}
+              data={events}
+              keyExtractor={(item) => String(item.id)}
+              contentContainerStyle={styles.listContent}
+              ItemSeparatorComponent={() => <View style={styles.separator} />}
+              renderItem={({ item }) => (
+                <Link href={`/groups/${item.group_id}/events/${item.id}?from=home`} asChild>
+                  <TouchableOpacity>
+                    <EventRow
+                      title={item.title}
+                      status={item.status}
+                      eventDate={item.event_date}
+                      startTime={item.start_time}
+                      meetingPoint={item.meeting_point}
+                      groupName={item.group_name}
+                      groupImagePath={item.group_image_url}
+                      isParticipant={item.is_participant}
+                    />
+                  </TouchableOpacity>
+                </Link>
+              )}
+              ListEmptyComponent={
+                <View style={styles.centered}>
+                  <Text style={styles.emptyText}>Nenhum pedal agendado nos seus grupos.</Text>
+                </View>
+              }
+            />
+          )}
 
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push('/groups/new-event')}
-        accessibilityLabel="Criar pedal"
-        accessibilityRole="button">
-        <Ionicons name="add" size={28} color="#fff" />
-      </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.fab}
+            onPress={() => router.push('/groups/new-event')}
+            accessibilityLabel="Criar pedal"
+            accessibilityRole="button">
+            <Ionicons name="add" size={28} color="#fff" />
+          </TouchableOpacity>
+        </>
+      )}
     </View>
   );
 }
@@ -89,6 +117,18 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '600',
+    flex: 1,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  headerAction: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   list: {
     flex: 1,
