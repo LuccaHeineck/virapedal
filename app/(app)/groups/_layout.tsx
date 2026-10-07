@@ -47,6 +47,7 @@ export default function GroupsLayout() {
       <Stack.Screen name="[id]/events/new" options={{ title: 'Novo pedal', presentation: 'modal' }} />
       <Stack.Screen name="[id]/events/[eventId]/index" options={{ title: 'Pedal' }} />
       <Stack.Screen name="[id]/events/[eventId]/edit" options={{ title: 'Editar pedal' }} />
+      <Stack.Screen name="users/[userId]" options={{ title: 'Perfil' }} />
     </Stack>
   );
 }

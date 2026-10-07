@@ -32,6 +32,7 @@ type ParticipantRowProps = {
   participant: EventParticipant;
   canRemove?: boolean;
   onRemove?: () => void;
+  onOpenProfile?: () => void;
   removing?: boolean;
 };
 
@@ -40,23 +41,31 @@ type DeleteConfirmation =
   | { kind: 'participant'; participant: EventParticipant }
   | null;
 
-function ParticipantRow({ participant, canRemove = false, onRemove, removing = false }: ParticipantRowProps) {
+function ParticipantRow({ participant, canRemove = false, onRemove, onOpenProfile, removing = false }: ParticipantRowProps) {
   const name = participant.users?.name ?? participant.guest_name ?? 'Usuário';
   const photoUrl = participant.users?.profile_photo_url ?? null;
   const isGuest = !participant.user_id;
 
   return (
     <View style={styles.participantRow}>
-      {photoUrl ? (
-        <Image source={{ uri: photoUrl }} style={styles.avatar} />
-      ) : (
-        <View style={styles.avatarPlaceholder}>
-          <Text style={styles.avatarPlaceholderText}>{name.charAt(0).toUpperCase() || '?'}</Text>
-        </View>
-      )}
-      <Text style={styles.participantName} numberOfLines={1}>
-        {name}
-      </Text>
+      <TouchableOpacity
+        style={styles.participantIdentity}
+        onPress={onOpenProfile}
+        disabled={!onOpenProfile}
+        accessibilityRole={onOpenProfile ? 'button' : undefined}
+        accessibilityLabel={onOpenProfile ? `Abrir perfil de ${name}` : undefined}
+      >
+        {photoUrl ? (
+          <Image source={{ uri: photoUrl }} style={styles.avatar} />
+        ) : (
+          <View style={styles.avatarPlaceholder}>
+            <Text style={styles.avatarPlaceholderText}>{name.charAt(0).toUpperCase() || '?'}</Text>
+          </View>
+        )}
+        <Text style={styles.participantName} numberOfLines={1}>
+          {name}
+        </Text>
+      </TouchableOpacity>
       {isGuest ? (
         <View style={styles.guestBadge}>
           <Text style={styles.guestBadgeText}>Convidado</Text>
@@ -223,6 +232,15 @@ export default function EventDetail() {
       ? deleteConfirmation.participant.users?.name ?? deleteConfirmation.participant.guest_name ?? 'este participante'
       : null;
 
+  function openProfile(userId: string | null) {
+    if (!userId) return;
+
+    router.push({
+      pathname: '/groups/users/[userId]',
+      params: { userId },
+    });
+  }
+
   return (
     <>
       {backButton}
@@ -234,6 +252,7 @@ export default function EventDetail() {
         renderItem={({ item }) => (
           <ParticipantRow
             participant={item}
+            onOpenProfile={() => openProfile(item.user_id)}
             canRemove={isCreator && item.user_id !== user?.id}
             onRemove={() => setDeleteConfirmation({ kind: 'participant', participant: item })}
             removing={removingParticipantId === item.id}
@@ -471,6 +490,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     paddingVertical: 10,
+  },
+  participantIdentity: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   avatar: {
     width: 40,

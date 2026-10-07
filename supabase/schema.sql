@@ -282,6 +282,17 @@ CREATE POLICY "View profiles of groupmates"
         )
     );
 
+CREATE POLICY "View profiles of participants in visible events"
+    ON users FOR SELECT TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM event_participants ep
+            WHERE ep.user_id = users.id
+              AND ep.status <> 'cancelled'
+              AND can_view_event(ep.event_id, auth.uid())
+        )
+    );
+
 CREATE POLICY "Update own profile"
     ON users FOR UPDATE TO authenticated
     USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
