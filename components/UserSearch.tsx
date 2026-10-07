@@ -70,7 +70,7 @@ export function UserSearch({ onSelectUser }: UserSearchProps) {
           style={styles.input}
           value={query}
           onChangeText={setQuery}
-          placeholder="Buscar pessoas pelo nome"
+          placeholder="Buscar pessoas no Virapedal"
           autoFocus
           autoCapitalize="none"
           autoCorrect={false}

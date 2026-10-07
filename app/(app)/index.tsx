@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Link, useFocusEffect, useRouter } from 'expo-router';
+import { Link, Tabs, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { EventRow } from '../../components/EventRow';
@@ -30,21 +30,42 @@ export default function Home() {
   useEffect(() => subscribeHomeRefresh(refresh), [refresh]);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <Text style={styles.title} numberOfLines={1}>
-          {searchOpen ? 'Pesquisar usuários' : name ? `Olá, ${name}` : 'Bem-vindo ao Virapedal'}
-        </Text>
-        <TouchableOpacity
-          style={styles.headerAction}
-          onPress={() => setSearchOpen((open) => !open)}
-          accessibilityRole="button"
-          accessibilityLabel={searchOpen ? 'Fechar busca de usuários' : 'Pesquisar usuários'}
-          hitSlop={8}
-        >
-          <Ionicons name={searchOpen ? 'close' : 'search-outline'} size={25} color={colors.primary} />
-        </TouchableOpacity>
-      </View>
+    <>
+      <Tabs.Screen
+        options={{
+          headerRight: () =>
+            searchOpen ? null : (
+              <TouchableOpacity
+                style={[styles.headerAction, styles.navigationAction]}
+                onPress={() => setSearchOpen(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Pesquisar usuários"
+                hitSlop={8}
+              >
+                <Ionicons name="search-outline" size={25} color={colors.primary} />
+              </TouchableOpacity>
+            ),
+        }}
+      />
+      <View style={styles.container}>
+        {searchOpen ? (
+          <View style={styles.headerRow}>
+            <Text style={styles.title}>Pesquisar usuários</Text>
+            <TouchableOpacity
+              style={styles.headerAction}
+              onPress={() => setSearchOpen(false)}
+              accessibilityRole="button"
+              accessibilityLabel="Fechar busca de usuários"
+              hitSlop={8}
+            >
+              <Ionicons name="close" size={25} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <Text style={styles.title} numberOfLines={1}>
+            {name ? `Olá, ${name}` : 'Bem-vindo ao Virapedal'}
+          </Text>
+        )}
 
       {searchOpen ? (
         <UserSearch
@@ -103,7 +124,8 @@ export default function Home() {
           </TouchableOpacity>
         </>
       )}
-    </View>
+      </View>
+    </>
   );
 }
 
@@ -129,6 +151,9 @@ const styles = StyleSheet.create({
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  navigationAction: {
+    marginRight: 16,
   },
   list: {
     flex: 1,
