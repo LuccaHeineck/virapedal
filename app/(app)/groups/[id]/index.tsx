@@ -148,13 +148,25 @@ export default function GroupDetail() {
           <NavRow icon="bicycle-outline" label="Pedais" hint="Eventos agendados do grupo" onPress={() => {}} />
         </Link>
 
-        {isAdmin ? (
+        {/* Qualquer membro vê a lista (o RLS de group_members já restringe a
+            leitura a membros); só o admin ganha os controles de gestão, que
+            members.tsx esconde para os demais. */}
+        {membership ? (
           <>
             <View style={styles.divider} />
             <Link href={`/groups/${group.id}/members`} asChild>
-              <NavRow icon="people-outline" label="Membros" hint="Ver e gerenciar participantes" onPress={() => {}} />
+              <NavRow
+                icon="people-outline"
+                label="Membros"
+                hint={isAdmin ? 'Ver e gerenciar participantes' : 'Ver quem participa do grupo'}
+                onPress={() => {}}
+              />
             </Link>
+          </>
+        ) : null}
 
+        {isAdmin ? (
+          <>
             <View style={styles.divider} />
             <Link href={`/groups/${group.id}/edit`} asChild>
               <NavRow
