@@ -118,7 +118,7 @@ export default function ProfileSettings() {
       />
 
       {saveError ? <Text style={styles.error}>{saveError}</Text> : null}
-      {saveSuccess ? <Text style={styles.success}>Salvo.</Text> : null}
+      {saveSuccess ? <Text style={styles.success}>Alterações de perfil salvas!</Text> : null}
 
       <TouchableOpacity
         style={[styles.button, (saving || name.trim().length === 0) && styles.buttonDisabled]}
