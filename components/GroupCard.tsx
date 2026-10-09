@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { colors } from '../constants/colors';
 import { Group } from '../hooks/useGroups';
 import { GroupImage } from './GroupImage';
+import { PendingRequestsBadge } from './PendingRequestsBadge';
 
 type GroupCardProps = {
   group: Group;
@@ -60,14 +61,7 @@ export function GroupCard({ group, isAdmin = false, pendingRequests = 0 }: Group
             </View>
           ) : null}
 
-          {pendingRequests > 0 ? (
-            <View
-              style={[styles.badge, styles.badgePending]}
-              accessibilityLabel={`${pendingRequests} ${pendingRequests === 1 ? 'solicitação pendente' : 'solicitações pendentes'}`}>
-              <Ionicons name="person-add" size={11} color={PENDING_FG} />
-              <Text style={[styles.badgeText, { color: PENDING_FG }]}>{pendingRequests}</Text>
-            </View>
-          ) : null}
+          <PendingRequestsBadge count={pendingRequests} />
         </View>
       </View>
 
@@ -82,9 +76,6 @@ export function GroupCard({ group, isAdmin = false, pendingRequests = 0 }: Group
 // azul livre para elementos interativos.
 const PUBLIC_FG = '#1f7a44';
 const PRIVATE_FG = '#4b5563';
-// Âmbar de "aguardando" -- o mesmo da faixa "Solicitação enviada" na tela do
-// grupo, para que pendência tenha uma cor só no app.
-const PENDING_FG = '#a8681f';
 
 const styles = StyleSheet.create({
   card: {
@@ -134,9 +125,6 @@ const styles = StyleSheet.create({
   badgeAdmin: {
     backgroundColor: '#eaf1fe',
     marginLeft: 4,
-  },
-  badgePending: {
-    backgroundColor: '#f7ecdc',
   },
   badgeText: {
     fontSize: 11,

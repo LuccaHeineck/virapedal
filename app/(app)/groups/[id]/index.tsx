@@ -8,12 +8,14 @@ import { ConfirmDialog } from '../../../../components/ConfirmDialog';
 import { GroupImage } from '../../../../components/GroupImage';
 import { LoadingView } from '../../../../components/LoadingView';
 import { NavRow } from '../../../../components/NavRow';
+import { PendingRequestsBadge } from '../../../../components/PendingRequestsBadge';
 import { StatusText } from '../../../../components/StatusText';
 import { colors } from '../../../../constants/colors';
 import { useGroup } from '../../../../hooks/useGroup';
 import { GroupMemberRow, useGroupMembers } from '../../../../hooks/useGroupMembers';
 import { useGroupMutations } from '../../../../hooks/useGroupMutations';
 import { useJoin } from '../../../../hooks/useJoin';
+import { useJoinRequests } from '../../../../hooks/useJoinRequests';
 
 // Pares fundo/frente dos selos de privacidade — mesmos tons do GroupCard, para
 // que "público" e "privado" tenham a mesma leitura em toda a navegação.
@@ -44,6 +46,9 @@ export default function GroupDetail() {
   // Para a saída do último admin: quem pode herdar o cargo. Para quem não é
   // membro o RLS devolve lista vazia, que aqui não é usada.
   const { members, refresh: refreshMembers, changeRole, mutationError: promoteError } = useGroupMembers(groupId);
+  // Pendências para o botão "Solicitações". O RLS só mostra as do grupo a
+  // admins; para os demais a lista volta vazia e o selo não aparece.
+  const { requests: pendingRequests, refresh: refreshRequests } = useJoinRequests(groupId);
 
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
   const [successorId, setSuccessorId] = useState<number | null>(null);
@@ -65,7 +70,8 @@ export default function GroupDetail() {
     useCallback(() => {
       refresh();
       refreshMembers();
-    }, [refresh, refreshMembers])
+      refreshRequests();
+    }, [refresh, refreshMembers, refreshRequests])
   );
 
   if (loading) {
@@ -242,7 +248,14 @@ export default function GroupDetail() {
                   <NavRow
                     icon="mail-open-outline"
                     label="Solicitações"
-                    hint="Aprovar pedidos de entrada"
+                    hint={
+                      pendingRequests.length === 0
+                        ? 'Nenhum pedido de entrada pendente'
+                        : pendingRequests.length === 1
+                          ? '1 pedido aguardando aprovação'
+                          : `${pendingRequests.length} pedidos aguardando aprovação`
+                    }
+                    badge={<PendingRequestsBadge count={pendingRequests.length} />}
                     onPress={() => {}}
                   />
                 </Link>
