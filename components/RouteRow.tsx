@@ -52,7 +52,7 @@ export function RouteRow({ route, isLast }: RouteRowProps) {
               <TrailNode variant="live" />
             </View>
           ) : null}
-          <Text style={[styles.name, live && styles.nameLive]} numberOfLines={1}>
+          <Text style={styles.name} numberOfLines={1}>
             {route.name ?? 'Rota sem nome'}
           </Text>
         </View>
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
-    paddingVertical: 16,
+    paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: neutrals.hairline,
   },
@@ -107,22 +107,21 @@ const styles = StyleSheet.create({
     marginLeft: -6,
     marginRight: 2,
   },
+  // Tamanhos alinhados ao EventRow: as duas listas aparecem lado a lado nas
+  // abas do Perfil e não devem parecer componentes de apps diferentes. A
+  // rota ao vivo já se destaca pelo ponto azul, sem precisar de fonte maior.
   name: {
     flexShrink: 1,
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '600',
     color: neutrals.ink,
-    letterSpacing: -0.2,
-  },
-  nameLive: {
-    fontSize: 19,
   },
   figures: {
     flexDirection: 'row',
     gap: 14,
   },
   figure: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '500',
     color: neutrals.slate,
     fontVariant: ['tabular-nums'],
@@ -138,10 +137,9 @@ const styles = StyleSheet.create({
   meta: {
     flexDirection: 'row',
     gap: 10,
-    marginTop: 2,
   },
   metaText: {
-    fontSize: 12,
+    fontSize: 14,
     color: neutrals.mute,
   },
   metaEvent: {

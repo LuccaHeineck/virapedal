@@ -1,20 +1,32 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Avatar } from '../../../components/Avatar';
+import { Button } from '../../../components/Button';
+import { ConfirmDialog } from '../../../components/ConfirmDialog';
+import { StatusText } from '../../../components/StatusText';
+import { TextField } from '../../../components/TextField';
+import { colors } from '../../../constants/colors';
+import { useAuth } from '../../../context/AuthContext';
 import { useImageUpload } from '../../../hooks/useImageUpload';
 import { useProfile } from '../../../hooks/useProfile';
 import { supabase } from '../../../lib/supabase';
 
+type Confirmation = 'removePhoto' | 'signOut' | null;
+
 export default function ProfileSettings() {
-  const { profile, loading, error, save, updatePhoto } = useProfile();
+  const { user } = useAuth();
+  const { profile, loading, error, save, updatePhoto, removePhoto } = useProfile();
   const { pickImage, picking, error: pickError } = useImageUpload();
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [removingPhoto, setRemovingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);
+  const [confirmation, setConfirmation] = useState<Confirmation>(null);
 
   useEffect(() => {
     if (profile) {
@@ -22,15 +34,19 @@ export default function ProfileSettings() {
     }
   }, [profile?.name]);
 
+  // Só há o que salvar quando o nome mudou de fato (e não ficou vazio).
+  const trimmedName = name.trim();
+  const canSave = !!profile && trimmedName.length > 0 && trimmedName !== profile.name;
+
   async function handleSave() {
-    if (saving || name.trim().length === 0) {
+    if (saving || !canSave) {
       return;
     }
     setSaving(true);
     setSaveError(null);
     setSaveSuccess(false);
 
-    const ok = await save({ name: name.trim() });
+    const ok = await save({ name: trimmedName });
 
     setSaving(false);
     setSaveSuccess(ok);
@@ -40,7 +56,7 @@ export default function ProfileSettings() {
   }
 
   async function handleChangePhoto() {
-    if (picking || uploadingPhoto) {
+    if (picking || uploadingPhoto || removingPhoto) {
       return;
     }
     setPhotoError(null);
@@ -56,10 +72,22 @@ export default function ProfileSettings() {
     setPhotoError(updateError);
   }
 
+  async function handleRemovePhoto() {
+    setPhotoError(null);
+    setRemovingPhoto(true);
+    const removeError = await removePhoto();
+    setRemovingPhoto(false);
+    setConfirmation(null);
+    setPhotoError(removeError);
+  }
+
   async function handleSignOut() {
     setSignOutError(null);
+    setSigningOut(true);
     const { error: signOutErr } = await supabase.auth.signOut();
     if (signOutErr) {
+      setSigningOut(false);
+      setConfirmation(null);
       setSignOutError(signOutErr.message);
     }
     // Em caso de sucesso, o listener onAuthStateChange do AuthContext recebe SIGNED_OUT
@@ -77,71 +105,114 @@ export default function ProfileSettings() {
   if (!profile) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.error}>{error ?? 'Não foi possível carregar seu perfil. Tente novamente.'}</Text>
+        <StatusText variant="error">{error ?? 'Não foi possível carregar seu perfil. Tente novamente.'}</StatusText>
       </View>
     );
   }
 
-  const photoBusy = picking || uploadingPhoto;
+  const photoBusy = picking || uploadingPhoto || removingPhoto;
+  const visiblePhotoError = photoError ?? pickError;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <TouchableOpacity
-        style={styles.photoButton}
-        onPress={handleChangePhoto}
-        disabled={photoBusy}
-        accessibilityLabel="Alterar foto de perfil"
-        accessibilityRole="button">
-        <View>
-          <Avatar photo={profile.profile_photo_url} name={profile.name} size={96} />
-          {photoBusy ? (
-            <View style={styles.photoOverlay}>
-              <ActivityIndicator color="#fff" />
-            </View>
-          ) : null}
+    <>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <View style={styles.photoSection}>
+          <TouchableOpacity
+            onPress={handleChangePhoto}
+            disabled={photoBusy}
+            accessibilityLabel="Alterar foto de perfil"
+            accessibilityRole="button">
+            <Avatar photo={profile.profile_photo_url} name={profile.name} size={96} />
+            {photoBusy ? (
+              <View style={styles.photoOverlay}>
+                <ActivityIndicator color="#fff" />
+              </View>
+            ) : null}
+          </TouchableOpacity>
+
+          <View style={styles.photoActions}>
+            <TouchableOpacity onPress={handleChangePhoto} disabled={photoBusy} hitSlop={8}>
+              <Text style={[styles.photoAction, photoBusy && styles.photoActionDisabled]}>Alterar foto</Text>
+            </TouchableOpacity>
+            {profile.profile_photo_url ? (
+              <TouchableOpacity onPress={() => setConfirmation('removePhoto')} disabled={photoBusy} hitSlop={8}>
+                <Text style={[styles.photoAction, styles.photoActionDestructive, photoBusy && styles.photoActionDisabled]}>
+                  Remover foto
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
         </View>
-        <Text style={styles.photoLabel}>Alterar foto</Text>
-      </TouchableOpacity>
 
-      {photoError ?? pickError ? <Text style={styles.error}>{photoError ?? pickError}</Text> : null}
+        {visiblePhotoError ? <StatusText variant="error">{visiblePhotoError}</StatusText> : null}
 
-      <Text style={styles.label}>Nome</Text>
-      <TextInput
-        style={styles.input}
-        value={name}
-        onChangeText={(text) => {
-          setName(text);
-          setSaveSuccess(false);
-        }}
-        placeholder="Nome"
-        editable={!saving}
+        <TextField
+          label="Nome"
+          value={name}
+          onChangeText={(text) => {
+            setName(text);
+            setSaveSuccess(false);
+          }}
+          placeholder="Nome"
+          editable={!saving}
+        />
+
+        {user?.email ? (
+          <TextField
+            label="E-mail"
+            value={user.email}
+            editable={false}
+            style={styles.readOnlyInput}
+            accessibilityHint="O e-mail da conta não pode ser alterado aqui."
+          />
+        ) : null}
+
+        {saveError ? <StatusText variant="error">{saveError}</StatusText> : null}
+        {saveSuccess ? <StatusText variant="success">Alterações de perfil salvas!</StatusText> : null}
+
+        <View style={styles.saveButton}>
+          <Button title="Salvar" onPress={handleSave} loading={saving} disabled={!canSave} />
+        </View>
+
+        {/* Sair fica isolado no fim da tela, longe das ações de edição. */}
+        <View style={styles.accountSection}>
+          {signOutError ? <StatusText variant="error">{signOutError}</StatusText> : null}
+          <Button title="Sair" variant="destructive" onPress={() => setConfirmation('signOut')} />
+        </View>
+      </ScrollView>
+
+      <ConfirmDialog
+        visible={confirmation === 'removePhoto'}
+        icon="image-outline"
+        title="Remover foto?"
+        message="Sua foto de perfil será removida e suas iniciais aparecerão no lugar."
+        confirmLabel="Remover"
+        onConfirm={handleRemovePhoto}
+        onCancel={() => setConfirmation(null)}
+        loading={removingPhoto}
       />
 
-      {saveError ? <Text style={styles.error}>{saveError}</Text> : null}
-      {saveSuccess ? <Text style={styles.success}>Salvo.</Text> : null}
-
-      <TouchableOpacity
-        style={[styles.button, (saving || name.trim().length === 0) && styles.buttonDisabled]}
-        onPress={handleSave}
-        disabled={saving || name.trim().length === 0}>
-        {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Salvar</Text>}
-      </TouchableOpacity>
-
-      {signOutError ? <Text style={styles.error}>{signOutError}</Text> : null}
-
-      <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-        <Text style={styles.signOutButtonText}>Sair</Text>
-      </TouchableOpacity>
-    </ScrollView>
+      <ConfirmDialog
+        visible={confirmation === 'signOut'}
+        icon="log-out-outline"
+        title="Sair da conta?"
+        message="Você será desconectado deste dispositivo e precisará entrar novamente para acessar sua conta."
+        confirmLabel="Sair"
+        onConfirm={handleSignOut}
+        onCancel={() => setConfirmation(null)}
+        loading={signingOut}
+      />
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   content: {
+    flexGrow: 1,
     padding: 24,
     gap: 12,
   },
@@ -149,13 +220,12 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
     padding: 24,
   },
-  photoButton: {
-    alignSelf: 'center',
+  photoSection: {
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
     marginBottom: 8,
   },
   photoOverlay: {
@@ -165,53 +235,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  photoLabel: {
-    color: '#2f6feb',
+  photoActions: {
+    flexDirection: 'row',
+    gap: 24,
+  },
+  photoAction: {
+    color: colors.primary,
     fontWeight: '600',
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
+  photoActionDestructive: {
+    color: colors.error,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#d0d0d0',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-  },
-  error: {
-    color: '#c0392b',
-  },
-  success: {
-    color: '#2a8a4a',
-  },
-  button: {
-    backgroundColor: '#2f6feb',
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonDisabled: {
+  photoActionDisabled: {
     opacity: 0.5,
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  readOnlyInput: {
+    backgroundColor: colors.placeholder,
+    color: '#666',
   },
-  signOutButton: {
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 24,
+  saveButton: {
+    marginTop: 8,
   },
-  signOutButtonText: {
-    color: '#c0392b',
-    fontSize: 16,
-    fontWeight: '600',
+  // marginTop: 'auto' empurra "Sair" para o fim da tela quando sobra espaço.
+  accountSection: {
+    marginTop: 'auto',
+    paddingTop: 32,
+    gap: 8,
   },
 });

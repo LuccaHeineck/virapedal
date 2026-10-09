@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Link, Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Avatar } from '../../../../../../components/Avatar';
 import { Button } from '../../../../../../components/Button';
+import { ConfirmDialog } from '../../../../../../components/ConfirmDialog';
 import { LoadingView } from '../../../../../../components/LoadingView';
 import { StatusText } from '../../../../../../components/StatusText';
 import { TextField } from '../../../../../../components/TextField';
@@ -349,50 +350,19 @@ export default function EventDetail() {
         }
       />
 
-      <Modal
+      <ConfirmDialog
         visible={deleteConfirmation !== null}
-        transparent
-        animationType="fade"
-        onRequestClose={() => !confirmationLoading && setDeleteConfirmation(null)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.confirmationCard} accessibilityViewIsModal>
-            <View style={styles.confirmationIcon}>
-              <Ionicons name="trash-outline" size={25} color={colors.error} />
-            </View>
-            <Text style={styles.confirmationTitle}>
-              {deleteConfirmation?.kind === 'event' ? 'Excluir este pedal?' : 'Remover participante?'}
-            </Text>
-            <Text style={styles.confirmationMessage}>
-              {deleteConfirmation?.kind === 'event'
-                ? 'O pedal e seus dados serão excluídos permanentemente. Esta ação não pode ser desfeita.'
-                : `${confirmationName} será removido da lista deste pedal.`}
-            </Text>
-            <View style={styles.confirmationActions}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setDeleteConfirmation(null)}
-                disabled={confirmationLoading}
-              >
-                <Text style={styles.cancelButtonText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.deleteButton]}
-                onPress={handleConfirmDelete}
-                disabled={confirmationLoading}
-              >
-                {confirmationLoading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.deleteButtonText}>
-                    {deleteConfirmation?.kind === 'event' ? 'Excluir pedal' : 'Remover'}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        title={deleteConfirmation?.kind === 'event' ? 'Excluir este pedal?' : 'Remover participante?'}
+        message={
+          deleteConfirmation?.kind === 'event'
+            ? 'O pedal e seus dados serão excluídos permanentemente. Esta ação não pode ser desfeita.'
+            : `${confirmationName} será removido da lista deste pedal.`
+        }
+        confirmLabel={deleteConfirmation?.kind === 'event' ? 'Excluir pedal' : 'Remover'}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteConfirmation(null)}
+        loading={confirmationLoading}
+      />
     </>
   );
 }
@@ -501,73 +471,5 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#555',
     fontWeight: '500',
-  },
-  modalBackdrop: {
-    flex: 1,
-    padding: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(17, 24, 39, 0.48)',
-  },
-  confirmationCard: {
-    width: '100%',
-    maxWidth: 440,
-    padding: 24,
-    borderRadius: 18,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-  },
-  confirmationIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff1f0',
-    marginBottom: 16,
-  },
-  confirmationTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
-    textAlign: 'center',
-  },
-  confirmationMessage: {
-    marginTop: 8,
-    fontSize: 15,
-    lineHeight: 22,
-    color: '#6b7280',
-    textAlign: 'center',
-  },
-  confirmationActions: {
-    width: '100%',
-    marginTop: 24,
-    flexDirection: 'row',
-    gap: 10,
-  },
-  modalButton: {
-    flex: 1,
-    minHeight: 46,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelButton: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    backgroundColor: '#fff',
-  },
-  cancelButtonText: {
-    color: '#374151',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  deleteButton: {
-    backgroundColor: colors.error,
-  },
-  deleteButtonText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '700',
   },
 });

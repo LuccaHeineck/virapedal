@@ -112,7 +112,7 @@ function StatLine({ label, value, muted }: { label: string; value: string; muted
 }
 
 export default function RouteDetail() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, from } = useLocalSearchParams<{ id: string; from?: string }>();
   const routeId = Number(id);
   const router = useRouter();
   const { user } = useAuth();
@@ -171,14 +171,27 @@ export default function RouteDetail() {
     }
   }
 
-  // A lista é sempre o pai sensato desta tela -- mais simples que a tela de
-  // detalhe de pedal, que é aberta via links de outras abas.
+  // Normalmente a lista é o pai desta tela; aberta pela aba Perfil, a origem
+  // vem via ?from= (mesmo esquema do detalhe de pedal) e o dismissAll() evita
+  // deixar esta tela pendurada no topo da pilha de Rotas.
+  const handleBack = useCallback(() => {
+    if (from === 'profile') {
+      if (router.canDismiss()) {
+        router.dismissAll();
+      }
+      router.replace('/profile');
+      return;
+    }
+
+    router.replace('/routes');
+  }, [router, from]);
+
   const backButton = (
     <Stack.Screen
       options={{
         headerLeft: () => (
           <TouchableOpacity
-            onPress={() => router.replace('/routes')}
+            onPress={handleBack}
             hitSlop={8}
             accessibilityLabel="Voltar"
             accessibilityRole="button">

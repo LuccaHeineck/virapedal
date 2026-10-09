@@ -18,6 +18,7 @@ const PROFILE_COLUMNS = 'id, name, profile_photo_url, created_at, updated_at';
 const GENERIC_LOAD_ERROR = 'Não foi possível carregar seu perfil. Tente novamente.';
 const GENERIC_SAVE_ERROR = 'Não foi possível salvar suas alterações. Tente novamente.';
 const GENERIC_PHOTO_ERROR = 'Não foi possível atualizar sua foto. Tente novamente.';
+const GENERIC_PHOTO_REMOVE_ERROR = 'Não foi possível remover sua foto. Tente novamente.';
 
 export function useProfile() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -135,5 +136,38 @@ export function useProfile() {
     [profile]
   );
 
-  return { profile, loading, error, refresh: fetchProfile, save, updatePhoto };
+  // Zera profile_photo_url (o Avatar volta às iniciais) e, se a foto era um
+  // envio nosso, apaga o arquivo. Uma foto do Google não volta sozinha:
+  // handle_new_user só a copia na criação da conta. Retorna a mensagem de
+  // erro, ou null em caso de sucesso.
+  const removePhoto = useCallback(async (): Promise<string | null> => {
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData.user) {
+      return GENERIC_PHOTO_REMOVE_ERROR;
+    }
+
+    const previousPhoto = profile?.profile_photo_url ?? null;
+
+    const { data, error: updateError } = await supabase
+      .from('users')
+      .update({ profile_photo_url: null })
+      .eq('id', userData.user.id)
+      .select(PROFILE_COLUMNS)
+      .single<UserProfile>();
+
+    if (updateError || !data) {
+      return GENERIC_PHOTO_REMOVE_ERROR;
+    }
+
+    setProfile(data);
+
+    if (previousPhoto && !isExternalPhotoUrl(previousPhoto)) {
+      // Best-effort, como em updatePhoto.
+      await supabase.storage.from(AVATARS_BUCKET).remove([previousPhoto]);
+    }
+
+    return null;
+  }, [profile]);
+
+  return { profile, loading, error, refresh: fetchProfile, save, updatePhoto, removePhoto };
 }
