@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
 export type JoinRequestRow = {
@@ -21,9 +21,16 @@ export function useJoinRequests(groupId: number) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [respondError, setRespondError] = useState<string | null>(null);
+  // Pedido sendo aprovado/recusado agora, para o spinner só naquela linha.
+  const [respondingId, setRespondingId] = useState<number | null>(null);
+  // `loading` só na primeira carga: recarregar depois de responder mantém a
+  // lista na tela em vez de trocá-la pela tela de carregamento.
+  const hasLoaded = useRef(false);
 
   const fetchRequests = useCallback(async () => {
-    setLoading(true);
+    if (!hasLoaded.current) {
+      setLoading(true);
+    }
     setError(null);
 
     const { data, error: selectError } = await supabase
@@ -41,6 +48,7 @@ export function useJoinRequests(groupId: number) {
     }
 
     setRequests(data);
+    hasLoaded.current = true;
     setLoading(false);
   }, [groupId]);
 
@@ -51,6 +59,7 @@ export function useJoinRequests(groupId: number) {
   const respond = useCallback(
     async (requestId: number, approve: boolean) => {
       setRespondError(null);
+      setRespondingId(requestId);
 
       const { data, error: rpcError } = await supabase.rpc('respond_to_join_request', {
         p_request_id: requestId,
@@ -58,15 +67,17 @@ export function useJoinRequests(groupId: number) {
       });
 
       if (rpcError || !data) {
+        setRespondingId(null);
         setRespondError(GENERIC_RESPOND_ERROR);
         return false;
       }
 
       await fetchRequests();
+      setRespondingId(null);
       return true;
     },
     [fetchRequests]
   );
 
-  return { requests, loading, error, refresh: fetchRequests, respond, respondError };
+  return { requests, loading, error, refresh: fetchRequests, respond, respondingId, respondError };
 }

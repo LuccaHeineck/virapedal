@@ -3,15 +3,18 @@ import { StyleSheet, Text, View } from 'react-native';
 import { colors } from '../constants/colors';
 import { Group } from '../hooks/useGroups';
 import { GroupImage } from './GroupImage';
+import { PendingRequestsBadge } from './PendingRequestsBadge';
 
 type GroupCardProps = {
   group: Group;
   // Mostra o selo "Admin" -- mesmo escudo azul do banner "Você administra
   // este grupo" na tela do grupo.
   isAdmin?: boolean;
+  // Solicitações de entrada aguardando aprovação (só chega > 0 para admins).
+  pendingRequests?: number;
 };
 
-export function GroupCard({ group, isAdmin = false }: GroupCardProps) {
+export function GroupCard({ group, isAdmin = false, pendingRequests = 0 }: GroupCardProps) {
   const isPrivate = group.privacy === 'private';
   const memberLabel = `${group.members_count} ${group.members_count === 1 ? 'membro' : 'membros'}`;
 
@@ -57,6 +60,8 @@ export function GroupCard({ group, isAdmin = false }: GroupCardProps) {
               <Text style={[styles.badgeText, { color: colors.primary }]}>Admin</Text>
             </View>
           ) : null}
+
+          <PendingRequestsBadge count={pendingRequests} />
         </View>
       </View>
 
