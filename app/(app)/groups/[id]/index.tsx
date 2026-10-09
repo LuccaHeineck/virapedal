@@ -313,13 +313,7 @@ export default function GroupDetail() {
                   <NavRow
                     icon="mail-open-outline"
                     label="Solicitações"
-                    hint={
-                      pendingRequests.length === 0
-                        ? 'Nenhum pedido de entrada pendente'
-                        : pendingRequests.length === 1
-                          ? '1 pedido aguardando aprovação'
-                          : `${pendingRequests.length} pedidos aguardando aprovação`
-                    }
+                    hint="Verificar solicitações de entrada"
                     badge={<PendingRequestsBadge count={pendingRequests.length} />}
                     onPress={() => {}}
                   />
