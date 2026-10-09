@@ -1,13 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
+import { colors } from '../constants/colors';
 import { Group } from '../hooks/useGroups';
 import { GroupImage } from './GroupImage';
 
 type GroupCardProps = {
   group: Group;
+  // Mostra o selo "Admin" -- mesmo escudo azul do banner "Você administra
+  // este grupo" na tela do grupo.
+  isAdmin?: boolean;
 };
 
-export function GroupCard({ group }: GroupCardProps) {
+export function GroupCard({ group, isAdmin = false }: GroupCardProps) {
   const isPrivate = group.privacy === 'private';
   const memberLabel = `${group.members_count} ${group.members_count === 1 ? 'membro' : 'membros'}`;
 
@@ -46,6 +50,13 @@ export function GroupCard({ group }: GroupCardProps) {
         <View style={styles.metaRow}>
           <Ionicons name="people-outline" size={14} color="#777" />
           <Text style={styles.metaText}>{memberLabel}</Text>
+
+          {isAdmin ? (
+            <View style={[styles.badge, styles.badgeAdmin]}>
+              <Ionicons name="shield-checkmark" size={11} color={colors.primary} />
+              <Text style={[styles.badgeText, { color: colors.primary }]}>Admin</Text>
+            </View>
+          ) : null}
         </View>
       </View>
 
@@ -105,6 +116,10 @@ const styles = StyleSheet.create({
   },
   badgePrivate: {
     backgroundColor: '#eceef2',
+  },
+  badgeAdmin: {
+    backgroundColor: '#eaf1fe',
+    marginLeft: 4,
   },
   badgeText: {
     fontSize: 11,

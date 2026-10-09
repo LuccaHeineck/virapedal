@@ -30,6 +30,8 @@ const GENERIC_LOAD_ERROR = 'Não foi possível carregar os grupos. Tente novamen
 export function useGroups() {
   const [myGroups, setMyGroups] = useState<Group[]>([]);
   const [discoverGroups, setDiscoverGroups] = useState<Group[]>([]);
+  // Grupos em que o usuário é admin ativo, para o selo na lista.
+  const [adminGroupIds, setAdminGroupIds] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,7 +55,7 @@ export function useGroups() {
 
     const [groupsResult, membershipsResult] = await Promise.all([
       supabase.from('groups').select(GROUP_COLUMNS).order('created_at', { ascending: false }).returns<Group[]>(),
-      supabase.from('group_members').select('group_id').eq('user_id', userData.user.id).is('left_at', null),
+      supabase.from('group_members').select('group_id, role').eq('user_id', userData.user.id).is('left_at', null),
     ]);
 
     if (groupsResult.error || !groupsResult.data || membershipsResult.error || !membershipsResult.data) {
@@ -63,6 +65,9 @@ export function useGroups() {
     }
 
     const myGroupIds = new Set(membershipsResult.data.map((row) => row.group_id));
+    setAdminGroupIds(
+      new Set(membershipsResult.data.filter((row) => row.role === 'admin').map((row) => row.group_id))
+    );
     setMyGroups(groupsResult.data.filter((g) => myGroupIds.has(g.id)));
     setDiscoverGroups(groupsResult.data.filter((g) => !myGroupIds.has(g.id)));
     setLoading(false);
@@ -72,5 +77,5 @@ export function useGroups() {
     fetchGroups();
   }, [fetchGroups]);
 
-  return { myGroups, discoverGroups, loading, error, refresh: fetchGroups };
+  return { myGroups, discoverGroups, adminGroupIds, loading, error, refresh: fetchGroups };
 }

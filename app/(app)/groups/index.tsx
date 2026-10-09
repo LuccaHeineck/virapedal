@@ -11,7 +11,7 @@ import { useGroups } from '../../../hooks/useGroups';
 type Tab = 'mine' | 'discover';
 
 export default function GroupsList() {
-  const { myGroups, discoverGroups, loading, error, refresh } = useGroups();
+  const { myGroups, discoverGroups, adminGroupIds, loading, error, refresh } = useGroups();
   const [tab, setTab] = useState<Tab>('mine');
   const [search, setSearch] = useState('');
 
@@ -83,7 +83,7 @@ export default function GroupsList() {
           renderItem={({ item }) => (
             <Link href={`/groups/${item.id}`} asChild>
               <TouchableOpacity>
-                <GroupCard group={item} />
+                <GroupCard group={item} isAdmin={adminGroupIds.has(item.id)} />
               </TouchableOpacity>
             </Link>
           )}
