@@ -5,6 +5,7 @@ import { Avatar } from '../../../components/Avatar';
 import { EventRow } from '../../../components/EventRow';
 import { RouteRow } from '../../../components/RouteRow';
 import { StatusText } from '../../../components/StatusText';
+import { UnderlineTabs } from '../../../components/UnderlineTabs';
 import { colors, neutrals } from '../../../constants/colors';
 import { MyEventParticipation, useMyEventParticipations } from '../../../hooks/useMyEventParticipations';
 import { useProfile } from '../../../hooks/useProfile';
@@ -189,21 +190,7 @@ export default function Profile() {
             ))}
           </View>
 
-          <View style={styles.tabs} accessibilityRole="tablist">
-            {TABS.map(({ key, label }) => {
-              const active = tab === key;
-              return (
-                <TouchableOpacity
-                  key={key}
-                  style={[styles.tab, active && styles.tabActive]}
-                  onPress={() => setTab(key)}
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected: active }}>
-                  <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>{label}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          <UnderlineTabs tabs={TABS} active={tab} onChange={setTab} style={styles.tabs} />
 
           {listError ? <StatusText variant="error">{listError}</StatusText> : null}
         </View>
@@ -291,30 +278,7 @@ const styles = StyleSheet.create({
     color: '#c0392b',
   },
   tabs: {
-    flexDirection: 'row',
     marginTop: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: neutrals.hairline,
-  },
-  tab: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-    marginBottom: -StyleSheet.hairlineWidth,
-  },
-  tabActive: {
-    borderBottomColor: colors.primary,
-  },
-  tabLabel: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: neutrals.mute,
-  },
-  tabLabelActive: {
-    color: neutrals.ink,
-    fontWeight: '600',
   },
   separator: {
     height: 1,

@@ -23,6 +23,7 @@ export default function EditGroup() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
+  const [discoverable, setDiscoverable] = useState(false);
   const [localImageUri, setLocalImageUri] = useState<string | null>(null);
 
   useEffect(() => {
@@ -30,6 +31,7 @@ export default function EditGroup() {
       setName(group.name);
       setDescription(group.description ?? '');
       setIsPrivate(group.privacy === 'private');
+      setDiscoverable(group.discoverable);
     }
   }, [group]);
 
@@ -70,6 +72,8 @@ export default function EditGroup() {
       name: name.trim(),
       description: description.trim().length > 0 ? description.trim() : null,
       privacy: isPrivate ? 'private' : 'public',
+      // Grupo público já aparece por inteiro; o campo só vale para privados.
+      discoverable: isPrivate && discoverable,
     });
     if (updated) {
       router.back();
@@ -135,6 +139,26 @@ export default function EditGroup() {
           thumbColor="#fff"
         />
       </View>
+
+      {isPrivate ? (
+        <View style={styles.privacyRow}>
+          <View style={styles.privacyTextGroup}>
+            <Text style={styles.privacyLabel}>Visível em Descobrir</Text>
+            <Text style={styles.privacyHint}>
+              {discoverable
+                ? 'Aparece para todos com o nome e os admins, e recebe solicitações de entrada.'
+                : 'Escondido de quem não é membro. Não recebe novas solicitações.'}
+            </Text>
+          </View>
+          <Switch
+            value={discoverable}
+            onValueChange={setDiscoverable}
+            disabled={busy}
+            trackColor={{ false: colors.border, true: colors.primary }}
+            thumbColor="#fff"
+          />
+        </View>
+      ) : null}
 
       {imageError ? <StatusText variant="error">{imageError}</StatusText> : null}
       {saveError ? <StatusText variant="error">{saveError}</StatusText> : null}

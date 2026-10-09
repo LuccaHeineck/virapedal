@@ -16,6 +16,7 @@ export default function NewGroup() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
+  const [discoverable, setDiscoverable] = useState(false);
   const [pickedImage, setPickedImage] = useState<PickedImage | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -29,6 +30,7 @@ export default function NewGroup() {
       setName('');
       setDescription('');
       setIsPrivate(false);
+      setDiscoverable(false);
       setPickedImage(null);
       setSaveError(null);
     }, [])
@@ -59,6 +61,12 @@ export default function NewGroup() {
     if (!group) {
       setSaveError(error);
       return;
+    }
+
+    // create_group() não recebe discoverable; como quem cria já é admin, um
+    // update logo em seguida resolve sem mudar a assinatura da RPC.
+    if (isPrivate && discoverable) {
+      await updateGroup(group.id, { discoverable: true });
     }
 
     if (pickedImage) {
@@ -118,6 +126,26 @@ export default function NewGroup() {
           thumbColor="#fff"
         />
       </View>
+
+      {isPrivate ? (
+        <View style={styles.privacyRow}>
+          <View style={styles.privacyTextGroup}>
+            <Text style={styles.privacyLabel}>Visível em Descobrir</Text>
+            <Text style={styles.privacyHint}>
+              {discoverable
+                ? 'Aparece para todos com o nome e os admins, e recebe solicitações de entrada.'
+                : 'Escondido de quem não é membro. Não recebe novas solicitações.'}
+            </Text>
+          </View>
+          <Switch
+            value={discoverable}
+            onValueChange={setDiscoverable}
+            disabled={busy}
+            trackColor={{ false: colors.border, true: colors.primary }}
+            thumbColor="#fff"
+          />
+        </View>
+      ) : null}
 
       {imageError ? <StatusText variant="error">{imageError}</StatusText> : null}
       {saveError ? <StatusText variant="error">{saveError}</StatusText> : null}

@@ -3,17 +3,40 @@ import { useCallback, useMemo, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { GroupCard } from '../../../components/GroupCard';
 import { LoadingView } from '../../../components/LoadingView';
+import { PrivateGroupCard } from '../../../components/PrivateGroupCard';
 import { StatusText } from '../../../components/StatusText';
 import { TextField } from '../../../components/TextField';
+import { UnderlineTabs } from '../../../components/UnderlineTabs';
 import { colors } from '../../../constants/colors';
-import { useGroups } from '../../../hooks/useGroups';
+import { Group, PrivateGroupPreview, useGroups } from '../../../hooks/useGroups';
 
 type Tab = 'mine' | 'discover';
 
+// "Descobrir" mistura grupos públicos (card completo, abre a tela do grupo)
+// com privados visíveis (só nome, admins e o pedido de entrada).
+type ListItem =
+  | { kind: 'group'; key: string; group: Group; createdAt: string }
+  | { kind: 'private'; key: string; group: PrivateGroupPreview; createdAt: string };
+
+const TABS: { key: Tab; label: string }[] = [
+  { key: 'mine', label: 'Meus grupos' },
+  { key: 'discover', label: 'Descobrir' },
+];
+
 export default function GroupsList() {
-  const { myGroups, discoverGroups, adminGroupIds, loading, error, refresh } = useGroups();
+  const { myGroups, discoverGroups, privateDiscoverGroups, adminGroupIds, pendingRequestCounts, loading, error, refresh } =
+    useGroups();
   const [tab, setTab] = useState<Tab>('mine');
   const [search, setSearch] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Estado próprio para o "puxar para atualizar" (mesmo esquema do Perfil):
+  // o indicador só aparece quando o gesto foi feito, não a cada volta de foco.
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refresh();
+    setRefreshing(false);
+  }, [refresh]);
 
   // useGroups() só busca no mount — sem isso, voltar para esta tela depois
   // de criar/entrar/sair de um grupo em outra tela (a instância da pilha
@@ -24,19 +47,33 @@ export default function GroupsList() {
     }, [refresh])
   );
 
-  const filteredDiscoverGroups = useMemo(() => {
+  const myItems = useMemo<ListItem[]>(
+    () => myGroups.map((group) => ({ kind: 'group', key: `g${group.id}`, group, createdAt: group.created_at })),
+    [myGroups]
+  );
+
+  // Públicos e privados intercalados pela data de criação, mais novos
+  // primeiro -- a mesma ordem que a lista já tinha.
+  const discoverItems = useMemo<ListItem[]>(() => {
     const query = search.trim().toLowerCase();
-    if (query.length === 0) {
-      return discoverGroups;
-    }
-    return discoverGroups.filter((g) => g.name.toLowerCase().includes(query));
-  }, [discoverGroups, search]);
+    const matches = (name: string) => query.length === 0 || name.toLowerCase().includes(query);
+    const items: ListItem[] = [
+      ...discoverGroups
+        .filter((group) => matches(group.name))
+        .map((group): ListItem => ({ kind: 'group', key: `g${group.id}`, group, createdAt: group.created_at })),
+      ...privateDiscoverGroups
+        .filter((group) => matches(group.name))
+        .map((group): ListItem => ({ kind: 'private', key: `p${group.id}`, group, createdAt: group.created_at })),
+    ];
+    return items.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }, [discoverGroups, privateDiscoverGroups, search]);
 
   if (loading) {
     return <LoadingView />;
   }
 
-  const groups = tab === 'mine' ? myGroups : filteredDiscoverGroups;
+  const items = tab === 'mine' ? myItems : discoverItems;
+  const hasAnyGroup = myGroups.length > 0 || discoverGroups.length > 0 || privateDiscoverGroups.length > 0;
   const emptyText =
     tab === 'mine'
       ? 'Você ainda não participa de nenhum grupo.'
@@ -46,16 +83,7 @@ export default function GroupsList() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.tabs}>
-        <TouchableOpacity style={[styles.tab, tab === 'mine' && styles.tabActive]} onPress={() => setTab('mine')}>
-          <Text style={[styles.tabText, tab === 'mine' && styles.tabTextActive]}>Meus grupos</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, tab === 'discover' && styles.tabActive]}
-          onPress={() => setTab('discover')}>
-          <Text style={[styles.tabText, tab === 'discover' && styles.tabTextActive]}>Descobrir</Text>
-        </TouchableOpacity>
-      </View>
+      <UnderlineTabs tabs={TABS} active={tab} onChange={setTab} style={styles.tabs} />
 
       {tab === 'discover' ? (
         <View style={styles.searchContainer}>
@@ -69,24 +97,42 @@ export default function GroupsList() {
         </View>
       ) : null}
 
-      {error ? (
+      {/* Com a lista já na tela, uma falha ao recarregar vira aviso acima
+          dela em vez de apagar o que o usuário estava vendo. */}
+      {error && hasAnyGroup ? (
+        <View style={styles.errorBanner}>
+          <StatusText variant="error">{error}</StatusText>
+        </View>
+      ) : null}
+
+      {error && !hasAnyGroup ? (
         <View style={styles.centered}>
           <StatusText variant="error">{error}</StatusText>
         </View>
       ) : (
         <FlatList
-          data={groups}
-          keyExtractor={(item) => String(item.id)}
+          data={items}
+          keyExtractor={(item) => item.key}
           contentContainerStyle={styles.listContent}
-          refreshControl={<RefreshControl refreshing={false} onRefresh={refresh} />}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} colors={[colors.primary]} />
+          }
           ItemSeparatorComponent={() => <View style={styles.separator} />}
-          renderItem={({ item }) => (
-            <Link href={`/groups/${item.id}`} asChild>
-              <TouchableOpacity>
-                <GroupCard group={item} isAdmin={adminGroupIds.has(item.id)} />
-              </TouchableOpacity>
-            </Link>
-          )}
+          renderItem={({ item }) =>
+            item.kind === 'private' ? (
+              <PrivateGroupCard group={item.group} onRequested={refresh} />
+            ) : (
+              <Link href={`/groups/${item.group.id}`} asChild>
+                <TouchableOpacity>
+                  <GroupCard
+                    group={item.group}
+                    isAdmin={adminGroupIds.has(item.group.id)}
+                    pendingRequests={pendingRequestCounts.get(item.group.id) ?? 0}
+                  />
+                </TouchableOpacity>
+              </Link>
+            )
+          }
           ListEmptyComponent={
             <View style={styles.centered}>
               <Text style={styles.emptyText}>{emptyText}</Text>
@@ -104,30 +150,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   tabs: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  tab: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: colors.placeholder,
-  },
-  tabActive: {
-    backgroundColor: colors.primary,
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#555',
-  },
-  tabTextActive: {
-    color: '#fff',
+    marginHorizontal: 24,
+    marginTop: 8,
+    marginBottom: 12,
   },
   searchContainer: {
+    paddingHorizontal: 24,
+    paddingBottom: 8,
+  },
+  errorBanner: {
     paddingHorizontal: 24,
     paddingBottom: 8,
   },

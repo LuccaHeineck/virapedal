@@ -9,9 +9,11 @@ type GroupCardProps = {
   // Mostra o selo "Admin" -- mesmo escudo azul do banner "Você administra
   // este grupo" na tela do grupo.
   isAdmin?: boolean;
+  // Solicitações de entrada aguardando aprovação (só chega > 0 para admins).
+  pendingRequests?: number;
 };
 
-export function GroupCard({ group, isAdmin = false }: GroupCardProps) {
+export function GroupCard({ group, isAdmin = false, pendingRequests = 0 }: GroupCardProps) {
   const isPrivate = group.privacy === 'private';
   const memberLabel = `${group.members_count} ${group.members_count === 1 ? 'membro' : 'membros'}`;
 
@@ -57,6 +59,15 @@ export function GroupCard({ group, isAdmin = false }: GroupCardProps) {
               <Text style={[styles.badgeText, { color: colors.primary }]}>Admin</Text>
             </View>
           ) : null}
+
+          {pendingRequests > 0 ? (
+            <View
+              style={[styles.badge, styles.badgePending]}
+              accessibilityLabel={`${pendingRequests} ${pendingRequests === 1 ? 'solicitação pendente' : 'solicitações pendentes'}`}>
+              <Ionicons name="person-add" size={11} color={PENDING_FG} />
+              <Text style={[styles.badgeText, { color: PENDING_FG }]}>{pendingRequests}</Text>
+            </View>
+          ) : null}
         </View>
       </View>
 
@@ -71,6 +82,9 @@ export function GroupCard({ group, isAdmin = false }: GroupCardProps) {
 // azul livre para elementos interativos.
 const PUBLIC_FG = '#1f7a44';
 const PRIVATE_FG = '#4b5563';
+// Âmbar de "aguardando" -- o mesmo da faixa "Solicitação enviada" na tela do
+// grupo, para que pendência tenha uma cor só no app.
+const PENDING_FG = '#a8681f';
 
 const styles = StyleSheet.create({
   card: {
@@ -120,6 +134,9 @@ const styles = StyleSheet.create({
   badgeAdmin: {
     backgroundColor: '#eaf1fe',
     marginLeft: 4,
+  },
+  badgePending: {
+    backgroundColor: '#f7ecdc',
   },
   badgeText: {
     fontSize: 11,
