@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { ComponentProps, useRef } from 'react';
+import { ComponentProps, ReactNode, useRef } from 'react';
 import { ActivityIndicator, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '../constants/colors';
 
@@ -14,6 +14,10 @@ type ConfirmDialogProps = {
   // Enquanto true, o botão de confirmar mostra um spinner e nenhum dos dois
   // botões (nem o "voltar" do Android) fecha o diálogo.
   loading?: boolean;
+  // Conteúdo extra entre a mensagem e os botões (ex.: escolher quem vira
+  // admin ao sair do grupo). Fica fora do congelamento abaixo: é interativo
+  // e quem usa controla o próprio estado.
+  children?: ReactNode;
 };
 
 // Diálogo de confirmação para ações destrutivas (excluir, remover, sair).
@@ -27,6 +31,7 @@ export function ConfirmDialog({
   onCancel,
   icon = 'trash-outline',
   loading = false,
+  children,
 }: ConfirmDialogProps) {
   // Quem usa o diálogo costuma derivar o texto do mesmo estado que controla
   // `visible` -- ao fechar, esse estado vira null e o texto muda (ex.: o
@@ -48,6 +53,7 @@ export function ConfirmDialog({
           </View>
           <Text style={styles.title}>{content.title}</Text>
           <Text style={styles.message}>{content.message}</Text>
+          {children ? <View style={styles.extra}>{children}</View> : null}
           <View style={styles.actions}>
             <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={onCancel} disabled={loading}>
               <Text style={styles.cancelButtonText}>Cancelar</Text>
@@ -103,6 +109,10 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: '#6b7280',
     textAlign: 'center',
+  },
+  extra: {
+    width: '100%',
+    marginTop: 16,
   },
   actions: {
     width: '100%',

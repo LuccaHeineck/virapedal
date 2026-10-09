@@ -1,14 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Link, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback } from 'react';
-import { Alert, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Avatar } from '../../../../components/Avatar';
 import { Button } from '../../../../components/Button';
+import { ConfirmDialog } from '../../../../components/ConfirmDialog';
 import { GroupImage } from '../../../../components/GroupImage';
 import { LoadingView } from '../../../../components/LoadingView';
 import { NavRow } from '../../../../components/NavRow';
 import { StatusText } from '../../../../components/StatusText';
 import { colors } from '../../../../constants/colors';
 import { useGroup } from '../../../../hooks/useGroup';
+import { GroupMemberRow, useGroupMembers } from '../../../../hooks/useGroupMembers';
 import { useJoin } from '../../../../hooks/useJoin';
 
 // Pares fundo/frente dos selos de privacidade — mesmos tons do GroupCard, para
@@ -37,6 +40,17 @@ export default function GroupDetail() {
   const { group, membership, pendingRequest, loading, error, refresh, leaveGroup, leaving, leaveError } =
     useGroup(groupId);
   const { joinPublicGroup, requestToJoin, submitting, error: joinError } = useJoin(groupId);
+  // Para a saída do último admin: quem pode herdar o cargo. Para quem não é
+  // membro o RLS devolve lista vazia, que aqui não é usada.
+  const { members, refresh: refreshMembers, changeRole, mutationError: promoteError } = useGroupMembers(groupId);
+
+  const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
+  const [successorId, setSuccessorId] = useState<number | null>(null);
+  const [pickingSuccessor, setPickingSuccessor] = useState(false);
+  const [promoting, setPromoting] = useState(false);
+  // Fixado ao abrir o diálogo: depois da promoção a lista recarrega com dois
+  // admins e needsSuccessor viraria false no meio da saída, trocando o texto.
+  const [leavingAsLastAdmin, setLeavingAsLastAdmin] = useState(false);
 
   // Voltar para cá depois de editar, entrar/sair ou gerenciar membros (a
   // instância desta tela na pilha permanece montada) não dispararia o
@@ -44,7 +58,8 @@ export default function GroupDetail() {
   useFocusEffect(
     useCallback(() => {
       refresh();
-    }, [refresh])
+      refreshMembers();
+    }, [refresh, refreshMembers])
   );
 
   if (loading) {
@@ -73,24 +88,40 @@ export default function GroupDetail() {
     }
   }
 
-  async function handleLeave() {
-    const message = 'Você deixará de ver os pedais e as conversas deste grupo.';
-
-    if (Platform.OS === 'web') {
-      if (window.confirm(message)) {
-        await leaveGroup();
-      }
-      return;
-    }
-
-    Alert.alert('Sair do grupo', message, [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Sair', style: 'destructive', onPress: () => leaveGroup() },
-    ]);
-  }
-
   const isPrivate = group.privacy === 'private';
   const isAdmin = membership?.role === 'admin';
+
+  // O último admin só sai passando o cargo adiante. A sugestão é o membro
+  // mais antigo (members já vem por joined_at) -- a mesma escolha que o banco
+  // faria sozinho --, mas o admin pode trocar por qualquer outro membro.
+  const otherMembers = members.filter((member) => member.user_id !== membership?.user_id);
+  const otherAdmins = otherMembers.filter((member) => member.role === 'admin');
+  const needsSuccessor = isAdmin && otherAdmins.length === 0 && otherMembers.length > 0;
+  const successor: GroupMemberRow | undefined =
+    otherMembers.find((member) => member.id === successorId) ?? otherMembers[0];
+
+  function openLeaveDialog() {
+    setSuccessorId(null);
+    setPickingSuccessor(false);
+    setLeavingAsLastAdmin(needsSuccessor);
+    setLeaveDialogOpen(true);
+  }
+
+  async function handleConfirmLeave() {
+    if (leavingAsLastAdmin && successor) {
+      // Promove antes de sair: se a promoção falhar, a pessoa continua no
+      // grupo e o diálogo fica aberto mostrando o erro.
+      setPromoting(true);
+      const promoted = await changeRole(successor.id, 'admin');
+      setPromoting(false);
+      if (!promoted) {
+        return;
+      }
+    }
+
+    await leaveGroup();
+    setLeaveDialogOpen(false);
+  }
   const privacyFg = isPrivate ? PRIVATE_FG : PUBLIC_FG;
   const memberLabel = `${group.members_count} ${group.members_count === 1 ? 'membro' : 'membros'}`;
 
@@ -201,13 +232,80 @@ export default function GroupDetail() {
             label="Sair do grupo"
             tone="danger"
             showChevron={false}
-            onPress={handleLeave}
+            onPress={openLeaveDialog}
             loading={leaving}
           />
         </View>
       ) : null}
 
       {leaveError ? <StatusText variant="error">{leaveError}</StatusText> : null}
+
+      <ConfirmDialog
+        visible={leaveDialogOpen}
+        icon="exit-outline"
+        title="Sair do grupo?"
+        message={
+          leavingAsLastAdmin
+            ? 'Você é o único administrador. Ao sair, outro membro passa a administrar o grupo.'
+            : 'Você deixará de ver os pedais e as conversas deste grupo.'
+        }
+        confirmLabel="Sair"
+        onConfirm={handleConfirmLeave}
+        onCancel={() => setLeaveDialogOpen(false)}
+        loading={promoting || leaving}>
+        {leavingAsLastAdmin && successor ? (
+          <View style={styles.successorBox}>
+            <Text style={styles.successorLabel}>Novo administrador</Text>
+            <View style={styles.successorRow}>
+              <Avatar photo={successor.users?.profile_photo_url ?? null} name={successor.users?.name ?? 'Usuário'} size={36} />
+              <Text style={styles.successorName} numberOfLines={1}>
+                {successor.users?.name ?? 'Usuário'}
+              </Text>
+              {otherMembers.length > 1 ? (
+                <TouchableOpacity
+                  onPress={() => setPickingSuccessor((open) => !open)}
+                  disabled={promoting || leaving}
+                  hitSlop={8}
+                  accessibilityRole="button">
+                  <Text style={styles.successorChange}>{pickingSuccessor ? 'Fechar' : 'Alterar'}</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            {pickingSuccessor ? (
+              <ScrollView style={styles.successorList} nestedScrollEnabled>
+                {otherMembers.map((member) => {
+                  const selected = member.id === successor.id;
+                  const name = member.users?.name ?? 'Usuário';
+                  return (
+                    <TouchableOpacity
+                      key={member.id}
+                      style={styles.successorOption}
+                      onPress={() => {
+                        setSuccessorId(member.id);
+                        setPickingSuccessor(false);
+                      }}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected }}>
+                      <Avatar photo={member.users?.profile_photo_url ?? null} name={name} size={32} />
+                      <Text style={styles.successorOptionName} numberOfLines={1}>
+                        {name}
+                      </Text>
+                      <Ionicons
+                        name={selected ? 'radio-button-on' : 'radio-button-off'}
+                        size={20}
+                        color={selected ? colors.primary : '#c4c8cf'}
+                      />
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            ) : null}
+
+            {promoteError ? <StatusText variant="error">{promoteError}</StatusText> : null}
+          </View>
+        ) : null}
+      </ConfirmDialog>
     </ScrollView>
   );
 }
@@ -326,5 +424,50 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#f0f0f0',
     marginLeft: 60,
+  },
+  successorBox: {
+    gap: 8,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#ececec',
+    backgroundColor: '#fafafa',
+  },
+  successorLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6b7280',
+  },
+  successorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  successorName: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1a1a1a',
+  },
+  successorChange: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  successorList: {
+    maxHeight: 220,
+    borderTopWidth: 1,
+    borderTopColor: '#ececec',
+  },
+  successorOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 8,
+  },
+  successorOptionName: {
+    flex: 1,
+    fontSize: 14,
+    color: '#1a1a1a',
   },
 });

@@ -4,17 +4,23 @@ import { LoadingView } from '../../../../components/LoadingView';
 import { MemberRow } from '../../../../components/MemberRow';
 import { StatusText } from '../../../../components/StatusText';
 import { colors } from '../../../../constants/colors';
-import { useGroup } from '../../../../hooks/useGroup';
+import { useAuth } from '../../../../context/AuthContext';
 import { useGroupMembers } from '../../../../hooks/useGroupMembers';
 
 export default function GroupMembers() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const groupId = Number(id);
 
-  const { membership } = useGroup(groupId);
+  const { user } = useAuth();
   const { members, loading, error, removeMember, changeRole, mutationError } = useGroupMembers(groupId);
 
-  const isAdmin = membership?.role === 'admin';
+  // O papel de quem vê sai da própria lista, que é recarregada após cada
+  // mudança de papel -- assim, ao se rebaixar, os controles somem na hora
+  // (antes vinham do useGroup, que só recarregava ao reabrir a tela).
+  const viewerMember = members.find((member) => member.user_id === user?.id);
+  const isAdmin = viewerMember?.role === 'admin';
+  // Um admin só pode ser rebaixado se sobrar outro admin no grupo.
+  const adminCount = members.filter((member) => member.role === 'admin').length;
 
   if (loading) {
     return <LoadingView />;
@@ -42,6 +48,8 @@ export default function GroupMembers() {
             <MemberRow
               member={item}
               isViewerAdmin={isAdmin}
+              canDemote={adminCount > 1}
+              isViewer={item.user_id === user?.id}
               onToggleRole={() => changeRole(item.id, item.role === 'admin' ? 'member' : 'admin')}
               onRemove={() => removeMember(item.id)}
             />

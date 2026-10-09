@@ -6,13 +6,21 @@ import { Avatar } from './Avatar';
 type MemberRowProps = {
   member: GroupMemberRow;
   isViewerAdmin: boolean;
+  // false quando este é o único admin do grupo: rebaixá-lo deixaria o grupo
+  // sem administrador (o banco também recusa, ver migration de sucessão).
+  canDemote?: boolean;
+  // A própria linha de quem está vendo: sem "Remover" -- sair passa pelo
+  // "Sair do grupo", que trata a sucessão de admin.
+  isViewer?: boolean;
   onToggleRole: () => void;
   onRemove: () => void;
 };
 
-export function MemberRow({ member, isViewerAdmin, onToggleRole, onRemove }: MemberRowProps) {
+export function MemberRow({ member, isViewerAdmin, canDemote = true, isViewer = false, onToggleRole, onRemove }: MemberRowProps) {
   const name = member.users?.name ?? 'Usuário';
   const photoUrl = member.users?.profile_photo_url ?? null;
+  const showRoleAction = !(member.role === 'admin' && !canDemote);
+  const showRemove = !isViewer;
 
   return (
     <View style={styles.container}>
@@ -25,14 +33,18 @@ export function MemberRow({ member, isViewerAdmin, onToggleRole, onRemove }: Mem
         <Text style={styles.role}>{member.role === 'admin' ? 'Admin' : 'Membro'}</Text>
       </View>
 
-      {isViewerAdmin ? (
+      {isViewerAdmin && (showRoleAction || showRemove) ? (
         <View style={styles.actions}>
-          <TouchableOpacity onPress={onToggleRole}>
-            <Text style={styles.actionText}>{member.role === 'admin' ? 'Rebaixar' : 'Promover'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={onRemove}>
-            <Text style={[styles.actionText, styles.removeText]}>Remover</Text>
-          </TouchableOpacity>
+          {!showRoleAction ? null : (
+            <TouchableOpacity onPress={onToggleRole}>
+              <Text style={styles.actionText}>{member.role === 'admin' ? 'Rebaixar' : 'Promover'}</Text>
+            </TouchableOpacity>
+          )}
+          {showRemove ? (
+            <TouchableOpacity onPress={onRemove}>
+              <Text style={[styles.actionText, styles.removeText]}>Remover</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
       ) : null}
     </View>
