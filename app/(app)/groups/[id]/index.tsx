@@ -3,6 +3,7 @@ import { Link, Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'ex
 import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Avatar } from '../../../../components/Avatar';
+import { AvatarStack } from '../../../../components/AvatarStack';
 import { Button } from '../../../../components/Button';
 import { ConfirmDialog } from '../../../../components/ConfirmDialog';
 import { GroupImage } from '../../../../components/GroupImage';
@@ -21,6 +22,10 @@ import { useJoinRequests } from '../../../../hooks/useJoinRequests';
 // que "público" e "privado" tenham a mesma leitura em toda a navegação.
 const PUBLIC_FG = '#1f7a44';
 const PRIVATE_FG = '#4b5563';
+
+// Fundo do botão de rostos no cabeçalho; também é a cor do anel das fotos,
+// para que ele separe as sobrepostas sem desenhar contorno.
+const FACES_BG = '#f5f6f8';
 
 // A faixa de "solicitação pendente" é um estado de espera, não de privacidade —
 // mantém o âmbar quente mesmo com o selo "Privado" agora neutro.
@@ -157,6 +162,36 @@ export default function GroupDetail() {
   }
   const privacyFg = isPrivate ? PRIVATE_FG : PUBLIC_FG;
   const memberLabel = `${group.members_count} ${group.members_count === 1 ? 'membro' : 'membros'}`;
+  const showFaces = !!membership && members.length > 0;
+
+  // Quem tem foto vem primeiro, porque rostos se reconhecem melhor que
+  // iniciais; o resto segue a ordem de entrada no grupo. Você entra na mesma
+  // regra que os demais (a frase diz "Você", então seu rosto pode aparecer),
+  // sem posição reservada.
+  const byPhotoFirst = (a: GroupMemberRow, b: GroupMemberRow) =>
+    Number(!a.users?.profile_photo_url) - Number(!b.users?.profile_photo_url);
+  const others = members.filter((member) => member.user_id !== membership?.user_id).sort(byPhotoFirst);
+  const facePeople = [...members].sort(byPhotoFirst).slice(0, 3).map((member) => ({
+    key: member.id,
+    name: member.users?.name ?? 'Usuário',
+    photo: member.users?.profile_photo_url ?? null,
+  }));
+
+  // Primeiro nome só: a frase cabe em uma linha e soa como nas redes sociais.
+  const firstName = (member: GroupMemberRow) => (member.users?.name ?? 'Usuário').trim().split(/\s+/)[0];
+  const facesSentence = (() => {
+    const total = group.members_count;
+    if (others.length === 0) {
+      return 'Só você por enquanto';
+    }
+    if (total <= 2) {
+      return `Você e ${firstName(others[0])}`;
+    }
+    if (total === 3 && others.length >= 2) {
+      return `Você, ${firstName(others[0])} e ${firstName(others[1])}`;
+    }
+    return `Você, ${firstName(others[0])} e mais ${total - 2}`;
+  })();
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -173,11 +208,41 @@ export default function GroupDetail() {
             <Text style={[styles.chipText, { color: privacyFg }]}>{isPrivate ? 'Privado' : 'Público'}</Text>
           </View>
 
-          <View style={styles.memberMeta}>
-            <Ionicons name="people" size={13} color="#6b7280" />
-            <Text style={styles.memberMetaText}>{memberLabel}</Text>
-          </View>
+          {/* Quem é membro vê a linha de rostos logo abaixo, que já diz
+              quantos são; quem não é (a lista de membros é restrita pelo RLS)
+              fica só com a contagem aqui. */}
+          {showFaces ? null : (
+            <View style={styles.memberMeta}>
+              <Ionicons name="people" size={13} color="#6b7280" />
+              <Text style={styles.memberMetaText}>{memberLabel}</Text>
+            </View>
+          )}
         </View>
+
+        {/* Linha de rostos, no padrão "Seguido por Ana, Bruno e mais 6" das
+            redes sociais: algumas fotos sobrepostas e os nomes de quem está
+            ali. Tocar abre a lista completa. */}
+        {showFaces ? (
+          <Link href={`/groups/${group.id}/members`} asChild>
+            <TouchableOpacity
+              style={styles.faces}
+              activeOpacity={0.6}
+              accessibilityRole="button"
+              accessibilityLabel={`${memberLabel}. Ver membros`}>
+              <AvatarStack
+                people={facePeople}
+                total={group.members_count}
+                max={3}
+                size={30}
+                overflowStyle="fade"
+                ringColor={FACES_BG}
+              />
+              <Text style={styles.facesText} numberOfLines={2}>
+                {facesSentence}
+              </Text>
+            </TouchableOpacity>
+          </Link>
+        ) : null}
 
         {group.description ? <Text style={styles.description}>{group.description}</Text> : null}
 
@@ -407,12 +472,31 @@ const styles = StyleSheet.create({
   memberMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   memberMetaText: {
     fontSize: 13,
     fontWeight: '500',
     color: '#6b7280',
+  },
+  // A margem da esquerda é igual à de cima/baixo: assim a primeira foto fica
+  // concêntrica com a ponta arredondada do botão, em vez de colada nela.
+  faces: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 2,
+    paddingVertical: 4,
+    paddingLeft: 4,
+    paddingRight: 14,
+    borderRadius: 999,
+    backgroundColor: FACES_BG,
+  },
+  facesText: {
+    flexShrink: 1,
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#374151',
   },
   description: {
     fontSize: 15,
