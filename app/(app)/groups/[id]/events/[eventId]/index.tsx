@@ -267,8 +267,25 @@ export default function EventDetail() {
                 <Text style={styles.meta}>{event.meeting_point}</Text>
               </View>
             ) : null}
-            {event.route_description ? <Text style={styles.meta}>Percurso: {event.route_description}</Text> : null}
-            {event.description ? <Text style={styles.description}>{event.description}</Text> : null}
+            {/* O percurso é o "sobre" do pedal: texto principal. As
+                observações (que já vêm com os avisos padrão de segurança)
+                ficam numa caixa discreta logo abaixo, para não roubarem o
+                destaque. */}
+            {event.route_description ? (
+              <View style={styles.routeRow}>
+                <Ionicons name="map-outline" size={16} color="#444" style={styles.routeIcon} />
+                <Text style={styles.routeText}>{event.route_description}</Text>
+              </View>
+            ) : null}
+            {event.description ? (
+              <View style={styles.notesBox}>
+                <View style={styles.notesHeader}>
+                  <Ionicons name="information-circle-outline" size={14} color="#6b7280" />
+                  <Text style={styles.notesTitle}>Observações</Text>
+                </View>
+                <Text style={styles.notesText}>{event.description}</Text>
+              </View>
+            ) : null}
             <Text style={styles.meta}>Criado por {event.creator_name}</Text>
 
             <Button
@@ -425,10 +442,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 5,
   },
-  description: {
-    fontSize: 15,
-    color: '#444',
+  routeRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
     marginTop: 4,
+  },
+  // Alinha o ícone com a primeira linha do texto, que pode quebrar em várias.
+  routeIcon: {
+    marginTop: 2,
+  },
+  routeText: {
+    flex: 1,
+    fontSize: 15,
+    lineHeight: 21,
+    color: '#333',
+  },
+  notesBox: {
+    gap: 6,
+    marginTop: 4,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: '#f7f8fa',
+  },
+  notesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  notesTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6b7280',
+  },
+  notesText: {
+    fontSize: 13,
+    lineHeight: 19,
+    color: '#555',
   },
   sectionTitle: {
     fontSize: 17,
