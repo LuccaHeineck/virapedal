@@ -53,7 +53,15 @@ export default function EditGroup() {
   }
 
   const busy = submitting || picking || uploading || deleting;
-  const canSubmit = name.trim().length > 0 && !busy;
+  // "Salvar" só quando algo do formulário mudou. A foto não entra aqui: ela é
+  // salva na hora em que é escolhida (handlePickImage). discoverable compara
+  // o valor efetivo -- num grupo público ele é sempre gravado como false.
+  const hasChanges =
+    name.trim() !== group.name ||
+    description.trim() !== (group.description ?? '') ||
+    isPrivate !== (group.privacy === 'private') ||
+    (isPrivate && discoverable) !== group.discoverable;
+  const canSubmit = name.trim().length > 0 && hasChanges && !busy;
 
   async function handlePickImage() {
     const image = await pickImage();
