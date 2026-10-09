@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Link, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { Link, Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Avatar } from '../../../../components/Avatar';
@@ -12,6 +12,7 @@ import { StatusText } from '../../../../components/StatusText';
 import { colors } from '../../../../constants/colors';
 import { useGroup } from '../../../../hooks/useGroup';
 import { GroupMemberRow, useGroupMembers } from '../../../../hooks/useGroupMembers';
+import { useGroupMutations } from '../../../../hooks/useGroupMutations';
 import { useJoin } from '../../../../hooks/useJoin';
 
 // Pares fundo/frente dos selos de privacidade — mesmos tons do GroupCard, para
@@ -51,6 +52,11 @@ export default function GroupDetail() {
   // Fixado ao abrir o diálogo: depois da promoção a lista recarrega com dois
   // admins e needsSuccessor viraria false no meio da saída, trocando o texto.
   const [leavingAsLastAdmin, setLeavingAsLastAdmin] = useState(false);
+  // Último membro saindo: o grupo ficaria vazio, então sair = excluir o grupo.
+  // Também fixado ao abrir o diálogo, pelo mesmo motivo do de cima.
+  const [leavingAsLastMember, setLeavingAsLastMember] = useState(false);
+  const { deleteGroup, deleting, deleteError } = useGroupMutations();
+  const router = useRouter();
 
   // Voltar para cá depois de editar, entrar/sair ou gerenciar membros (a
   // instância desta tela na pilha permanece montada) não dispararia o
@@ -104,10 +110,31 @@ export default function GroupDetail() {
     setSuccessorId(null);
     setPickingSuccessor(false);
     setLeavingAsLastAdmin(needsSuccessor);
+    // members_count vem da própria linha do grupo (já carregada), em vez da
+    // lista de membros -- que, se ainda estivesse carregando, pareceria vazia
+    // e faria o diálogo anunciar uma exclusão que não aconteceria.
+    setLeavingAsLastMember(group?.members_count === 1);
     setLeaveDialogOpen(true);
   }
 
   async function handleConfirmLeave() {
+    if (leavingAsLastMember) {
+      // Quem sobra sozinho é admin (a sucessão do banco garante), e a policy
+      // de DELETE em groups libera para admins; o cascade leva pedais,
+      // participações e solicitações junto.
+      const deleted = await deleteGroup(groupId);
+      if (!deleted) {
+        return;
+      }
+      // Fecha antes de navegar: esta tela continua na pilha durante o
+      // dismissAll, e um Modal visível ficaria sobreposto na lista.
+      setLeaveDialogOpen(false);
+      if (router.canDismiss()) {
+        router.dismissAll();
+      }
+      return;
+    }
+
     if (leavingAsLastAdmin && successor) {
       // Promove antes de sair: se a promoção falhar, a pessoa continua no
       // grupo e o diálogo fica aberto mostrando o erro.
@@ -243,16 +270,19 @@ export default function GroupDetail() {
       <ConfirmDialog
         visible={leaveDialogOpen}
         icon="exit-outline"
-        title="Sair do grupo?"
+        title={leavingAsLastMember ? 'Sair e excluir o grupo?' : 'Sair do grupo?'}
         message={
-          leavingAsLastAdmin
-            ? 'Você é o único administrador. Ao sair, outro membro passa a administrar o grupo.'
-            : 'Você deixará de ver os pedais e as conversas deste grupo.'
+          leavingAsLastMember
+            ? 'Você é o único membro. Ao sair, o grupo será excluído junto com todos os seus pedais. Esta ação não pode ser desfeita.'
+            : leavingAsLastAdmin
+              ? 'Você é o único administrador. Ao sair, outro membro passa a administrar o grupo.'
+              : 'Você deixará de ver os pedais e as conversas deste grupo.'
         }
-        confirmLabel="Sair"
+        confirmLabel={leavingAsLastMember ? 'Sair e excluir' : 'Sair'}
         onConfirm={handleConfirmLeave}
         onCancel={() => setLeaveDialogOpen(false)}
-        loading={promoting || leaving}>
+        loading={promoting || leaving || deleting}>
+        {leavingAsLastMember && deleteError ? <StatusText variant="error">{deleteError}</StatusText> : null}
         {leavingAsLastAdmin && successor ? (
           <View style={styles.successorBox}>
             <Text style={styles.successorLabel}>Novo administrador</Text>
