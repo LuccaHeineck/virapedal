@@ -11,6 +11,7 @@ import { TimeField } from '../components/TimeField';
 import { colors } from '../constants/colors';
 import { useCreateEvent } from '../hooks/useCreateEvent';
 import { useGroups } from '../hooks/useGroups';
+import { DEFAULT_EVENT_NOTES } from '../lib/eventDefaults';
 
 const DATE_SHAPE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_SHAPE = /^\d{2}:\d{2}$/;
@@ -31,7 +32,7 @@ export default function NewEvent() {
   const [startTime, setStartTime] = useState('');
   const [meetingPoint, setMeetingPoint] = useState('');
   const [routeDescription, setRouteDescription] = useState('');
-  const [description, setDescription] = useState('');
+  const [description, setDescription] = useState(DEFAULT_EVENT_NOTES);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   // Rede de seguranca: hoje a tela sai com back(), que a desempilha e
@@ -47,7 +48,7 @@ export default function NewEvent() {
       setStartTime('');
       setMeetingPoint('');
       setRouteDescription('');
-      setDescription('');
+      setDescription(DEFAULT_EVENT_NOTES);
       setValidationError(null);
     }, [])
   );
@@ -172,9 +173,9 @@ export default function NewEvent() {
           label="Observações"
           value={description}
           onChangeText={setDescription}
-          placeholder="Ex: trazer iluminação e capacete (opcional)"
+          placeholder="Avisos e recomendações para o pedal (opcional)"
           multiline
-          numberOfLines={3}
+          numberOfLines={6}
           editable={!submitting}
         />
 
