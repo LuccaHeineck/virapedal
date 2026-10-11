@@ -18,6 +18,7 @@ export type UpdateGroupInput = Partial<{
   description: string | null;
   image_url: string | null;
   privacy: GroupPrivacy;
+  discoverable: boolean;
 }>;
 
 export function useGroupMutations() {

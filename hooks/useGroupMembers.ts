@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { GroupRole } from './useGroup';
 
@@ -21,11 +21,16 @@ export function useGroupMembers(groupId: number) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
+  // `loading` só na primeira carga: recarregar depois de promover/remover
+  // mantém a lista na tela em vez de trocá-la pela tela de carregamento.
+  const hasLoaded = useRef(false);
 
   // Visível apenas a membros do grupo, via RLS — uma lista vazia para um
   // não-membro é indistinguível de um grupo sem membros ativos.
   const fetchMembers = useCallback(async () => {
-    setLoading(true);
+    if (!hasLoaded.current) {
+      setLoading(true);
+    }
     setError(null);
 
     const { data, error: selectError } = await supabase
@@ -43,6 +48,7 @@ export function useGroupMembers(groupId: number) {
     }
 
     setMembers(data);
+    hasLoaded.current = true;
     setLoading(false);
   }, [groupId]);
 

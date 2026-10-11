@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '../constants/colors';
 
@@ -10,9 +11,11 @@ type NavRowProps = {
   tone?: 'default' | 'danger';
   showChevron?: boolean;
   loading?: boolean;
+  // Elemento pequeno à direita, antes da seta (ex.: contador de pendências).
+  badge?: ReactNode;
 };
 
-export function NavRow({ icon, label, hint, onPress, tone = 'default', showChevron = true, loading }: NavRowProps) {
+export function NavRow({ icon, label, hint, onPress, tone = 'default', showChevron = true, loading, badge }: NavRowProps) {
   const danger = tone === 'danger';
   const accent = danger ? colors.error : colors.primary;
 
@@ -32,6 +35,8 @@ export function NavRow({ icon, label, hint, onPress, tone = 'default', showChevr
           </Text>
         ) : null}
       </View>
+
+      {badge}
 
       {loading ? (
         <ActivityIndicator size="small" color={accent} />

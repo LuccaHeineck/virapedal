@@ -25,7 +25,7 @@ export function useMyEventParticipations() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Passados e futuros, em ordem cronológica (crescente) -- diferente de
+  // Passados e futuros, do mais recente para o mais antigo -- diferente de
   // useUpcomingEvents, que só mostra o que ainda vai acontecer.
   const fetchParticipations = useCallback(async () => {
     setLoading(true);
@@ -61,8 +61,8 @@ export function useMyEventParticipations() {
       .from('events')
       .select('id, group_id, title, event_date, start_time, meeting_point, status, groups(name, image_url)')
       .in('id', eventIds)
-      .order('event_date', { ascending: true })
-      .order('start_time', { ascending: true })
+      .order('event_date', { ascending: false })
+      .order('start_time', { ascending: false })
       .returns<
         Array<
           Omit<MyEventParticipation, 'group_name' | 'group_image_url'> & {

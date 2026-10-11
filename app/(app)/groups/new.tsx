@@ -1,4 +1,4 @@
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useNavigation } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { Button } from '../../../components/Button';
@@ -9,26 +9,27 @@ import { useGroupMutations } from '../../../hooks/useGroupMutations';
 import { PickedImage, useImageUpload } from '../../../hooks/useImageUpload';
 
 export default function NewGroup() {
-  const router = useRouter();
+  // Navegador da pilha da aba Grupos (esta tela é uma rota dela).
+  const navigation = useNavigation();
   const { createGroup, updateGroup, submitting, error } = useGroupMutations();
   const { pickImage, uploadGroupCover, picking, uploading, error: imageError } = useImageUpload();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
+  const [discoverable, setDiscoverable] = useState(false);
   const [pickedImage, setPickedImage] = useState<PickedImage | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Esta tela sai com router.replace (ela vive na pilha da aba Grupos e
-  // precisa voltar para fora dela), e replace nao desmonta a tela: o
-  // useState sobrevive e o formulario reaparece preenchido na proxima
-  // abertura. Limpar ao ganhar foco garante formulario em branco a cada
-  // entrada.
+  // Garante formulario em branco a cada entrada, mesmo que a instancia
+  // desta tela sobreviva entre aberturas (era o caso quando ela saia com
+  // router.replace, que nao a desmontava).
   useFocusEffect(
     useCallback(() => {
       setName('');
       setDescription('');
       setIsPrivate(false);
+      setDiscoverable(false);
       setPickedImage(null);
       setSaveError(null);
     }, [])
@@ -61,6 +62,12 @@ export default function NewGroup() {
       return;
     }
 
+    // create_group() não recebe discoverable; como quem cria já é admin, um
+    // update logo em seguida resolve sem mudar a assinatura da RPC.
+    if (isPrivate && discoverable) {
+      await updateGroup(group.id, { discoverable: true });
+    }
+
     if (pickedImage) {
       const uploaded = await uploadGroupCover(group.id, pickedImage);
       if (uploaded) {
@@ -71,13 +78,16 @@ export default function NewGroup() {
       // de uma imagem opcional.
     }
 
-    // Mesmo motivo de new-event.tsx: esta tela e um modal da pilha de
-    // Grupos, e replace sozinho a deixaria pendurada, fazendo as telas
-    // abertas depois herdarem o contexto de modal no iOS.
-    if (router.canDismiss()) {
-      router.dismissAll();
-    }
-    router.replace(`/groups/${group.id}`);
+    // A pilha de Grupos é remontada do zero como [lista, grupo novo]:
+    // - tira este modal da pilha (mesmo motivo de new-event.tsx: deixado
+    //   pendurado, as telas abertas depois herdam o contexto de modal no iOS);
+    // - garante que o "voltar" do grupo novo leve à lista. replace deixava o
+    //   grupo sozinho, sem voltar; dismissAll + push às vezes não esvaziava
+    //   a pilha e o voltar caía num grupo aberto antes.
+    navigation.reset({
+      index: 1,
+      routes: [{ name: 'index' }, { name: '[id]/index', params: { id: String(group.id) } }],
+    } as never);
   }
 
   return (
@@ -118,6 +128,26 @@ export default function NewGroup() {
           thumbColor="#fff"
         />
       </View>
+
+      {isPrivate ? (
+        <View style={styles.privacyRow}>
+          <View style={styles.privacyTextGroup}>
+            <Text style={styles.privacyLabel}>Visível em Descobrir</Text>
+            <Text style={styles.privacyHint}>
+              {discoverable
+                ? 'Aparece para todos com o nome e os admins, e recebe solicitações de entrada.'
+                : 'Escondido de quem não é membro. Não recebe novas solicitações.'}
+            </Text>
+          </View>
+          <Switch
+            value={discoverable}
+            onValueChange={setDiscoverable}
+            disabled={busy}
+            trackColor={{ false: colors.border, true: colors.primary }}
+            thumbColor="#fff"
+          />
+        </View>
+      ) : null}
 
       {imageError ? <StatusText variant="error">{imageError}</StatusText> : null}
       {saveError ? <StatusText variant="error">{saveError}</StatusText> : null}
