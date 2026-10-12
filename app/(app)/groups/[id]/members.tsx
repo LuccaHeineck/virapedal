@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { ActionSheet, ActionSheetOption } from '../../../../components/ActionSheet';
@@ -13,6 +13,7 @@ import { GroupMemberRow, useGroupMembers } from '../../../../hooks/useGroupMembe
 
 export default function GroupMembers() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const groupId = Number(id);
 
   const { user } = useAuth();
@@ -125,6 +126,10 @@ export default function GroupMembers() {
               <MemberRow
                 member={item}
                 isViewer={item.user_id === user?.id}
+                onOpenProfile={() => router.push({
+                  pathname: '/groups/users/[userId]',
+                  params: { userId: item.user_id },
+                })}
                 busy={busyId === item.id}
                 onOpenMenu={hasActions && busyId === null ? () => setMenuMember(item) : undefined}
               />

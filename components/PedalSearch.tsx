@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { colors } from '../constants/colors';
 import { EventStatus } from '../hooks/useGroupEvents';
+import { todayDateString } from '../lib/eventDates';
 import { supabase } from '../lib/supabase';
 import { EventRow } from './EventRow';
 
@@ -57,7 +58,8 @@ export function PedalSearch({ onSelectPedal }: PedalSearchProps) {
           request = request.ilike('title', `%${literalTerm}%`);
         }
         if (completedOnly) {
-          request = request.eq('status', 'completed');
+          // A lista também marca como concluído um pedal agendado cuja data já passou.
+          request = request.or(`status.eq.completed,and(status.eq.scheduled,event_date.lt.${todayDateString()})`);
         }
 
         const { data, error: searchError } = await request.returns<PedalResult[]>();

@@ -15,6 +15,7 @@ type MemberRowProps = {
   member: GroupMemberRow;
   // A própria linha de quem está vendo: ganha o "(você)" ao lado do nome.
   isViewer?: boolean;
+  onOpenProfile?: () => void;
   // Abre o menu de ações do admin; ausente = linha sem botão "⋯" (quem não é
   // admin, ou um membro sobre o qual não há ação possível).
   onOpenMenu?: () => void;
@@ -25,29 +26,36 @@ type MemberRowProps = {
 // Linha da lista de membros: foto, nome, papel e desde quando participa. As
 // ações do admin (promover, rebaixar, remover) ficam atrás do "⋯", em vez de
 // links soltos na linha.
-export function MemberRow({ member, isViewer = false, onOpenMenu, busy = false }: MemberRowProps) {
+export function MemberRow({ member, isViewer = false, onOpenProfile, onOpenMenu, busy = false }: MemberRowProps) {
   const name = member.users?.name ?? 'Usuário';
   const isAdmin = member.role === 'admin';
 
   return (
     <View style={styles.container}>
-      <Avatar photo={member.users?.profile_photo_url ?? null} name={name} size={44} />
+      <TouchableOpacity
+        style={styles.identity}
+        onPress={onOpenProfile}
+        disabled={!onOpenProfile}
+        accessibilityRole={onOpenProfile ? 'button' : undefined}
+        accessibilityLabel={onOpenProfile ? `Abrir perfil de ${name}` : undefined}>
+        <Avatar photo={member.users?.profile_photo_url ?? null} name={name} size={44} />
 
-      <View style={styles.info}>
-        <View style={styles.nameRow}>
-          <Text style={styles.name} numberOfLines={1}>
-            {name}
-            {isViewer ? <Text style={styles.you}> (você)</Text> : null}
-          </Text>
-          {isAdmin ? (
-            <View style={styles.adminBadge}>
-              <Ionicons name="shield-checkmark" size={11} color={colors.primary} />
-              <Text style={styles.adminBadgeText}>Admin</Text>
-            </View>
-          ) : null}
+        <View style={styles.info}>
+          <View style={styles.nameRow}>
+            <Text style={styles.name} numberOfLines={1}>
+              {name}
+              {isViewer ? <Text style={styles.you}> (você)</Text> : null}
+            </Text>
+            {isAdmin ? (
+              <View style={styles.adminBadge}>
+                <Ionicons name="shield-checkmark" size={11} color={colors.primary} />
+                <Text style={styles.adminBadgeText}>Admin</Text>
+              </View>
+            ) : null}
+          </View>
+          <Text style={styles.meta}>{memberSince(member.joined_at)}</Text>
         </View>
-        <Text style={styles.meta}>{memberSince(member.joined_at)}</Text>
-      </View>
+      </TouchableOpacity>
 
       {busy ? (
         <ActivityIndicator color={colors.primary} style={styles.menuButton} />
@@ -71,6 +79,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     paddingVertical: 12,
+  },
+  identity: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   info: {
     flex: 1,
