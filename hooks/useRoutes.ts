@@ -21,6 +21,10 @@ export type Route = {
   // com Number() ao formatar.
   distance_meters: number | null;
   duration_seconds: number | null;
+  // Altimetria calculada no aparelho durante a gravação (também DECIMAL).
+  elevation_gain_meters: number | null;
+  max_altitude_meters: number | null;
+  min_altitude_meters: number | null;
   started_at: string | null;
   finished_at: string | null;
   created_at: string;
@@ -28,7 +32,7 @@ export type Route = {
 };
 
 export const ROUTE_COLUMNS =
-  'id, event_id, recorded_by, name, status, distance_meters, duration_seconds, started_at, finished_at, created_at, updated_at';
+  'id, event_id, recorded_by, name, status, distance_meters, duration_seconds, elevation_gain_meters, max_altitude_meters, min_altitude_meters, started_at, finished_at, created_at, updated_at';
 
 const GENERIC_LOAD_ERROR = 'Não foi possível carregar as rotas. Tente novamente.';
 
@@ -47,6 +51,19 @@ export function formatDistance(meters: number | null): string | null {
     return null;
   }
   return `${(value / 1000).toFixed(1).replace('.', ',')} km`;
+}
+
+// Metros inteiros: o GPS não tem precisão vertical para casas decimais.
+// Zero é um valor real aqui (pedal plano), então só ausência vira null.
+export function formatElevation(meters: number | null): string | null {
+  if (meters === null || meters === undefined) {
+    return null;
+  }
+  const value = Number(meters);
+  if (Number.isNaN(value)) {
+    return null;
+  }
+  return `${Math.round(value)} m`;
 }
 
 // Tempo em movimento, vindo do GPS. Fica nulo até a gravação existir -- para

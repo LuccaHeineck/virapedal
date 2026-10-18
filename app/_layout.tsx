@@ -3,6 +3,9 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect } from 'react';
 import { AuthProvider, useAuth } from '../context/AuthContext';
+import { flushQueue } from '../lib/routeTracking';
+// Registra a task de GPS no carregamento do bundle -- ver lib/routeTracking/task.ts.
+import '../lib/routeTracking/task';
 
 SplashScreen.preventAutoHideAsync();
 WebBrowser.maybeCompleteAuthSession();
@@ -15,6 +18,15 @@ function RootNavigator() {
       SplashScreen.hideAsync();
     }
   }, [loading]);
+
+  // Pontos que ficaram na fila (pedal sem sinal, app fechado antes de enviar)
+  // sobem assim que houver sessão. Falha aqui não é erro: tentam de novo no
+  // próximo lote ou na próxima abertura.
+  useEffect(() => {
+    if (session) {
+      flushQueue().catch(() => undefined);
+    }
+  }, [session]);
 
   if (loading) {
     return null;

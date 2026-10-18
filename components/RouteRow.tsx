@@ -5,6 +5,7 @@ import {
   formatDistance,
   formatDuration,
   formatElapsed,
+  formatElevation,
   formatTime,
   RouteListItem,
   routeTimestamp,
@@ -28,6 +29,8 @@ export function RouteRow({ route, isLast }: RouteRowProps) {
   const inProgress = live || paused;
 
   const distance = formatDistance(route.distance_meters);
+  // Só quando houve subida de fato: "↑ 0 m" numa linha de lista é ruído.
+  const climb = Number(route.elevation_gain_meters) > 0 ? formatElevation(route.elevation_gain_meters) : null;
   // Tempo em movimento quando o GPS já existe; até lá, o de relógio.
   const time = formatDuration(route.duration_seconds) ?? formatElapsed(route.started_at, route.finished_at);
 
@@ -63,6 +66,7 @@ export function RouteRow({ route, isLast }: RouteRowProps) {
           <View style={styles.figures}>
             {distance ? <Text style={styles.figure}>{distance}</Text> : null}
             {time ? <Text style={styles.figure}>{time}</Text> : null}
+            {climb ? <Text style={styles.figure}>↑ {climb}</Text> : null}
           </View>
         ) : null}
 
