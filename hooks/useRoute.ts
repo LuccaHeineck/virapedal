@@ -80,7 +80,8 @@ export function useRoute(routeId: number) {
   );
 
   // Transições active <-> paused -> finished. Ao finalizar, grava finished_at.
-  // Sem cálculo de distância/duração nesta fase -- viriam do GPS.
+  // Com GPS, quem finaliza é o useRouteRecorder, que manda os totais junto
+  // pelo patchRoute -- isto fica para quando não há gravação local.
   const updateStatus = useCallback(
     (next: RouteStatus) =>
       patchRoute({
@@ -97,5 +98,16 @@ export function useRoute(routeId: number) {
   // disso antes -- não é um detalhe técnico, é uma mudança de privacidade.
   const updateEvent = useCallback((eventId: number | null) => patchRoute({ event_id: eventId }), [patchRoute]);
 
-  return { route, loading, error, refresh: fetchRoute, updateStatus, updateName, updateEvent, submitting, saveError };
+  return {
+    route,
+    loading,
+    error,
+    refresh: fetchRoute,
+    patchRoute,
+    updateStatus,
+    updateName,
+    updateEvent,
+    submitting,
+    saveError,
+  };
 }
