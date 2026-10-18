@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   Image,
+  Linking,
   Modal,
   Platform,
   ScrollView,
@@ -17,6 +18,7 @@ import { Button } from '../../../components/Button';
 import { GhostRoute } from '../../../components/GhostRoute';
 import { LoadingView } from '../../../components/LoadingView';
 import { PedalPicker } from '../../../components/PedalPicker';
+import { RouteMap } from '../../../components/RouteMap/RouteMap';
 import { RoutePhotoThumb } from '../../../components/RoutePhotoThumb';
 import { StatusText } from '../../../components/StatusText';
 import { TRAIL_GUTTER, TrailNode } from '../../../components/TrailNode';
@@ -25,14 +27,18 @@ import { useAuth } from '../../../context/AuthContext';
 import { useLinkableEvents } from '../../../hooks/useLinkableEvents';
 import { useRoute } from '../../../hooks/useRoute';
 import { RoutePhoto, useRoutePhotos } from '../../../hooks/useRoutePhotos';
+import { useRoutePoints } from '../../../hooks/useRoutePoints';
+import { useRouteRecorder } from '../../../hooks/useRouteRecorder';
 import {
   formatDistance,
   formatDuration,
   formatElapsed,
+  formatElevation,
   formatLongDate,
   formatTime,
 } from '../../../hooks/useRoutes';
 import { useSignedImageUrl } from '../../../hooks/useSignedImageUrl';
+import { TRACKING_PERMISSION_MESSAGES } from '../../../lib/routeTracking/permissions';
 import { ROUTE_PHOTOS_BUCKET } from '../../../lib/routePhotos';
 
 const THUMB_SIZE = 100;
@@ -117,8 +123,25 @@ export default function RouteDetail() {
   const router = useRouter();
   const { user } = useAuth();
 
-  const { route, loading, error, refresh, updateStatus, updateName, updateEvent, submitting, saveError } =
+  const { route, loading, error, refresh, patchRoute, updateName, updateEvent, submitting, saveError } =
     useRoute(routeId);
+  const isOwner = !!route && route.recorded_by === user?.id;
+  const {
+    interrupted,
+    liveTotals,
+    busy: recorderBusy,
+    recorderError,
+    permissionIssue,
+    pause,
+    resume,
+    finish,
+    sync: syncRecorder,
+  } = useRouteRecorder(route, isOwner, patchRoute);
+  const {
+    points,
+    loading: pointsLoading,
+    refresh: refreshPoints,
+  } = useRoutePoints(routeId, { live: route?.status === 'active', isOwner });
   const { events: linkableEvents } = useLinkableEvents(route?.started_at ?? null);
   const [nameDraft, setNameDraft] = useState('');
   const {
@@ -139,7 +162,9 @@ export default function RouteDetail() {
     useCallback(() => {
       refresh();
       refreshPhotos();
-    }, [refresh, refreshPhotos])
+      refreshPoints();
+      syncRecorder();
+    }, [refresh, refreshPhotos, refreshPoints, syncRecorder])
   );
 
   // O rascunho segue a rota carregada, mas só quando o campo não está sendo
@@ -222,13 +247,24 @@ export default function RouteDetail() {
     );
   }
 
-  const isOwner = route.recorded_by === user?.id;
   const live = route.status === 'active';
   const finished = route.status === 'finished';
+  const working = submitting || recorderBusy;
 
+  // Enquanto o dono grava, os números vêm da sessão local (atualizada a cada
+  // ponto); o banco só recebe os totais a cada lote e pode estar defasado.
   const elapsed = formatElapsed(route.started_at, route.finished_at);
-  const movingTime = formatDuration(route.duration_seconds);
-  const distance = formatDistance(route.distance_meters);
+  const movingTime = formatDuration(liveTotals?.movingSeconds ?? route.duration_seconds);
+  const distance = formatDistance(liveTotals?.distanceMeters ?? route.distance_meters);
+  const climb = formatElevation(liveTotals ? liveTotals.elevationGain : route.elevation_gain_meters);
+  const minAltitude = liveTotals ? liveTotals.minAltitude : route.min_altitude_meters;
+  const maxAltitude = liveTotals ? liveTotals.maxAltitude : route.max_altitude_meters;
+  const altitudeRange =
+    minAltitude !== null && maxAltitude !== null
+      ? `${Math.round(Number(minAltitude))} – ${Math.round(Number(maxAltitude))} m`
+      : null;
+
+  const recorderMessage = permissionIssue ? TRACKING_PERMISSION_MESSAGES[permissionIssue] : recorderError;
 
   // O estado vira uma frase no contexto em vez de um selo solto no canto.
   const stateLine = live
@@ -313,31 +349,53 @@ export default function RouteDetail() {
         <View style={styles.stats}>
           {elapsed ? <StatLine label="tempo total" value={elapsed} /> : null}
           {movingTime ? <StatLine label="em movimento" value={movingTime} /> : null}
-          <StatLine label="distância" value={distance ?? 'aguardando GPS'} muted={!distance} />
+          <StatLine
+            label="distância"
+            value={distance ?? (finished ? 'sem registro' : 'aguardando GPS')}
+            muted={!distance}
+          />
+          {climb ? <StatLine label="subida" value={climb} /> : null}
+          {altitudeRange ? <StatLine label="altitude" value={altitudeRange} /> : null}
           {route.event_title ? <StatLine label="pedal" value={route.event_title} /> : null}
         </View>
 
-        <View style={styles.ghost}>
-          <GhostRoute />
-          <Text style={styles.ghostCaption}>O traçado aparece aqui quando o GPS estiver ativo.</Text>
-        </View>
+        {points.length > 0 ? (
+          <RouteMap points={points} live={live} />
+        ) : pointsLoading ? null : (
+          <View style={styles.ghost}>
+            <GhostRoute />
+            <Text style={styles.ghostCaption}>
+              {finished ? 'Esta rota não tem traçado.' : 'Aguardando sinal do GPS…'}
+            </Text>
+          </View>
+        )}
+
+        {interrupted ? (
+          <View style={styles.interrupted}>
+            <Text style={styles.interruptedTitle}>A gravação foi interrompida</Text>
+            <Text style={styles.interruptedText}>
+              O GPS parou de gravar esta rota (o celular reiniciou ou o app foi fechado). Retome para continuar o
+              traçado.
+            </Text>
+            <Button title="Retomar gravação" onPress={resume} loading={working} />
+          </View>
+        ) : null}
 
         {isOwner && !finished ? (
           <View style={styles.actions}>
             {live ? (
-              <Button title="Pausar" onPress={() => updateStatus('paused')} loading={submitting} />
+              interrupted ? null : <Button title="Pausar" onPress={pause} loading={working} />
             ) : (
-              <Button title="Retomar" onPress={() => updateStatus('active')} loading={submitting} />
+              <Button title="Retomar" onPress={resume} loading={working} />
             )}
-            <Button
-              title="Finalizar rota"
-              variant="destructive"
-              onPress={() => updateStatus('finished')}
-              loading={submitting}
-            />
+            <Button title="Finalizar rota" variant="destructive" onPress={finish} loading={working} />
           </View>
         ) : null}
 
+        {recorderMessage ? <StatusText variant="error">{recorderMessage}</StatusText> : null}
+        {permissionIssue && Platform.OS !== 'web' ? (
+          <Button title="Abrir configurações" variant="plain" onPress={() => Linking.openSettings()} />
+        ) : null}
         {saveError ? <StatusText variant="error">{saveError}</StatusText> : null}
 
         {isOwner && finished ? (
@@ -532,6 +590,24 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: 8,
+  },
+  // Aviso, não erro: nada se perdeu, só falta religar o GPS. Por isso sem o
+  // vermelho de colors.error -- uma faixa à esquerda no tom de "gravando".
+  interrupted: {
+    gap: 8,
+    paddingLeft: 12,
+    borderLeftWidth: 2,
+    borderLeftColor: colors.primary,
+  },
+  interruptedTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: neutrals.ink,
+  },
+  interruptedText: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: neutrals.slate,
   },
   photosSection: {
     gap: 12,
