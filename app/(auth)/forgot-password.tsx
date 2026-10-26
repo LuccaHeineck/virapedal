@@ -4,6 +4,8 @@ import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View 
 import { useAuth } from '../../context/AuthContext';
 import { getAuthErrorMessage } from '../../lib/authErrors';
 import { supabase } from '../../lib/supabase';
+import { palette } from '../../constants/colors';
+import { fonts } from '../../constants/theme';
 
 const MIN_PASSWORD_LENGTH = 6;
 
@@ -153,7 +155,7 @@ export default function ForgotPassword() {
             style={[styles.button, (!canSendCode || submitting) && styles.buttonDisabled]}
             onPress={handleSendCode}
             disabled={!canSendCode || submitting}>
-            {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Enviar código</Text>}
+            {submitting ? <ActivityIndicator color={palette.onPrimary} /> : <Text style={styles.buttonText}>Enviar código</Text>}
           </TouchableOpacity>
         </>
       ) : (
@@ -193,7 +195,7 @@ export default function ForgotPassword() {
             style={[styles.button, (!canReset || submitting) && styles.buttonDisabled]}
             onPress={handleReset}
             disabled={!canReset || submitting}>
-            {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Redefinir senha</Text>}
+            {submitting ? <ActivityIndicator color={palette.onPrimary} /> : <Text style={styles.buttonText}>Redefinir senha</Text>}
           </TouchableOpacity>
 
           {!recoveringRef.current ? (
@@ -215,48 +217,60 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    padding: 24,
-    gap: 12,
-    backgroundColor: '#fff',
+    paddingHorizontal: 26,
+    paddingVertical: 44,
+    gap: 16,
+    backgroundColor: palette.bg,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '600',
-    marginBottom: 8,
+    fontFamily: fonts.displayHeavy,
+    fontSize: 21,
+    color: palette.ink,
   },
   description: {
-    color: '#666',
-    fontSize: 15,
+    fontFamily: fonts.body,
+    fontSize: 14,
+    lineHeight: 20,
+    color: palette.ink,
+    opacity: 0.72,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#d0d0d0',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
+    minHeight: 46,
+    borderWidth: 1.5,
+    borderColor: palette.border,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    backgroundColor: palette.surface,
+    fontFamily: fonts.body,
+    fontSize: 14.5,
+    color: palette.ink,
   },
   error: {
-    color: '#c0392b',
+    fontFamily: fonts.bodyMedium,
+    fontSize: 13,
+    color: palette.error,
   },
   button: {
-    backgroundColor: '#2f6feb',
-    borderRadius: 8,
-    paddingVertical: 12,
+    minHeight: 48,
+    borderRadius: 12,
     alignItems: 'center',
-    marginTop: 8,
+    justifyContent: 'center',
+    backgroundColor: palette.primary,
+    marginTop: 6,
   },
   buttonDisabled: {
     opacity: 0.5,
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.display,
+    fontSize: 15,
+    color: palette.onPrimary,
   },
   link: {
-    marginTop: 16,
+    marginTop: 8,
     textAlign: 'center',
-    color: '#2f6feb',
+    fontFamily: fonts.bodyMedium,
+    fontSize: 13,
+    color: palette.primary,
   },
 });

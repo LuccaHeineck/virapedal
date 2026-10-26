@@ -1,12 +1,20 @@
 import { useFocusEffect, useNavigation } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Button } from '../../../components/Button';
+import { SegmentedControl } from '../../../components/SegmentedControl';
 import { StatusText } from '../../../components/StatusText';
 import { TextField } from '../../../components/TextField';
-import { colors } from '../../../constants/colors';
+import { colors, palette } from '../../../constants/colors';
 import { useGroupMutations } from '../../../hooks/useGroupMutations';
 import { PickedImage, useImageUpload } from '../../../hooks/useImageUpload';
+import { fonts, radii, SCREEN_GUTTER } from '../../../constants/theme';
+
+const PRIVACY_OPTIONS: { key: 'public' | 'private'; label: string }[] = [
+  { key: 'public', label: 'Público' },
+  { key: 'private', label: 'Privado' },
+];
 
 export default function NewGroup() {
   // Navegador da pilha da aba Grupos (esta tela é uma rota dela).
@@ -97,7 +105,8 @@ export default function NewGroup() {
           <Image source={{ uri: pickedImage.uri }} style={styles.imagePreview} />
         ) : (
           <View style={styles.imagePlaceholder}>
-            <Text style={styles.imagePlaceholderText}>Escolher imagem</Text>
+            <Ionicons name="image-outline" size={26} color={palette.inkSecondary} />
+            <Text style={styles.imagePlaceholderText}>Escolher foto de capa</Text>
           </View>
         )}
       </TouchableOpacity>
@@ -113,20 +122,17 @@ export default function NewGroup() {
         editable={!busy}
       />
 
-      <View style={styles.privacyRow}>
-        <View style={styles.privacyTextGroup}>
-          <Text style={styles.privacyLabel}>Grupo privado</Text>
-          <Text style={styles.privacyHint}>
-            {isPrivate ? 'Entrada mediante aprovação de um admin.' : 'Qualquer pessoa pode entrar diretamente.'}
-          </Text>
-        </View>
-        <Switch
-          value={isPrivate}
-          onValueChange={setIsPrivate}
+      <View>
+        <Text style={styles.fieldLabel}>Privacidade</Text>
+        <SegmentedControl
+          options={PRIVACY_OPTIONS}
+          active={isPrivate ? 'private' : 'public'}
+          onChange={(key) => setIsPrivate(key === 'private')}
           disabled={busy}
-          trackColor={{ false: colors.border, true: colors.primary }}
-          thumbColor="#fff"
         />
+        <Text style={styles.privacyNote}>
+          Público: qualquer pessoa pode entrar. Privado: a pessoa pede para entrar e um admin aprova.
+        </Text>
       </View>
 
       {isPrivate ? (
@@ -144,7 +150,7 @@ export default function NewGroup() {
             onValueChange={setDiscoverable}
             disabled={busy}
             trackColor={{ false: colors.border, true: colors.primary }}
-            thumbColor="#fff"
+            thumbColor={palette.surface}
           />
         </View>
       ) : null}
@@ -163,31 +169,53 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
-    padding: 24,
+    paddingHorizontal: SCREEN_GUTTER,
+    paddingTop: 24,
+    paddingBottom: 28,
     gap: 16,
   },
+  // Capa de 130px, como no design.
   imagePicker: {
-    alignSelf: 'center',
+    width: '100%',
+    marginBottom: 4,
   },
   imagePreview: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+    width: '100%',
+    height: 130,
+    borderRadius: radii.card,
     backgroundColor: colors.placeholder,
   },
   imagePlaceholder: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: colors.placeholder,
+    width: '100%',
+    height: 130,
+    borderRadius: radii.card,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: palette.border,
+    backgroundColor: palette.surface,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
   },
   imagePlaceholderText: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
-    paddingHorizontal: 8,
+    fontFamily: fonts.bodyMedium,
+    fontSize: 12.5,
+    color: palette.inkSecondary,
+  },
+  fieldLabel: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 12.5,
+    color: palette.ink,
+    opacity: 0.7,
+    marginBottom: 8,
+  },
+  privacyNote: {
+    fontFamily: fonts.body,
+    fontSize: 11.5,
+    lineHeight: 16,
+    color: palette.ink,
+    opacity: 0.55,
+    marginTop: 8,
   },
   privacyRow: {
     flexDirection: 'row',
@@ -201,12 +229,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   privacyLabel: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.display,
+    fontSize: 14,
+    color: palette.ink,
   },
   privacyHint: {
+    fontFamily: fonts.body,
     fontSize: 13,
-    color: '#666',
+    color: palette.inkSecondary,
     maxWidth: 240,
   },
 });

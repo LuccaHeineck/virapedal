@@ -2,6 +2,7 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 import { neutrals } from '../constants/colors';
 import { useSignedImageUrl } from '../hooks/useSignedImageUrl';
 import { ROUTE_PHOTOS_BUCKET } from '../lib/routePhotos';
+import { fonts } from '../constants/theme';
 
 // Uma pilha de fotos como um punhado de cópias reveladas jogadas na mesa:
 // até três miniaturas sobrepostas, as de trás levemente giradas, a da
@@ -113,7 +114,7 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: fonts.bodySemi,
     color: neutrals.paper,
     fontVariant: ['tabular-nums'],
   },

@@ -53,7 +53,8 @@
           "isAndroidForegroundServiceEnabled": true,
           "isIosBackgroundLocationEnabled": true
         }
-      ]
+      ],
+      "expo-font"
     ]
   }
 }

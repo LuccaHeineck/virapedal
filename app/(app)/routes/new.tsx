@@ -5,7 +5,7 @@ import { Button } from '../../../components/Button';
 import { PedalPicker } from '../../../components/PedalPicker';
 import { StatusText } from '../../../components/StatusText';
 import { TextField } from '../../../components/TextField';
-import { neutrals } from '../../../constants/colors';
+import { neutrals, palette } from '../../../constants/colors';
 import { useLinkableEvents } from '../../../hooks/useLinkableEvents';
 import { useStartRoute } from '../../../hooks/useStartRoute';
 import { clearTracking, getActiveSession, startTracking } from '../../../lib/routeTracking';
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   },
   input: {
     borderColor: neutrals.hairline,
-    backgroundColor: '#fff',
+    backgroundColor: palette.surface,
     color: neutrals.ink,
   },
 });

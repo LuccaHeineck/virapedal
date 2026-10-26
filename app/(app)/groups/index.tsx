@@ -1,13 +1,17 @@
-import { Link, useFocusEffect } from 'expo-router';
+import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { getInitials } from '../../../components/Avatar';
 import { GroupCard } from '../../../components/GroupCard';
 import { LoadingView } from '../../../components/LoadingView';
 import { PrivateGroupCard } from '../../../components/PrivateGroupCard';
+import { IconButton, ScreenHeader } from '../../../components/ScreenHeader';
+import { SegmentedControl } from '../../../components/SegmentedControl';
 import { StatusText } from '../../../components/StatusText';
 import { TextField } from '../../../components/TextField';
-import { UnderlineTabs } from '../../../components/UnderlineTabs';
 import { colors } from '../../../constants/colors';
+import { SCREEN_GUTTER, type } from '../../../constants/theme';
+import { useAuth } from '../../../context/AuthContext';
 import { Group, PrivateGroupPreview, useGroups } from '../../../hooks/useGroups';
 
 type Tab = 'mine' | 'discover';
@@ -26,6 +30,9 @@ const TABS: { key: Tab; label: string }[] = [
 export default function GroupsList() {
   const { myGroups, discoverGroups, privateDiscoverGroups, adminGroupIds, pendingRequestCounts, loading, error, refresh } =
     useGroups();
+  const router = useRouter();
+  const { user } = useAuth();
+  const name = typeof user?.user_metadata?.name === 'string' ? user.user_metadata.name : undefined;
   const [tab, setTab] = useState<Tab>('mine');
   const [search, setSearch] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -47,15 +54,21 @@ export default function GroupsList() {
     }, [refresh])
   );
 
+
+  const query = search.trim().toLowerCase();
+
+  // A busca do topo vale para as duas abas.
   const myItems = useMemo<ListItem[]>(
-    () => myGroups.map((group) => ({ kind: 'group', key: `g${group.id}`, group, createdAt: group.created_at })),
-    [myGroups]
+    () =>
+      myGroups
+        .filter((group) => query.length === 0 || group.name.toLowerCase().includes(query))
+        .map((group) => ({ kind: 'group', key: `g${group.id}`, group, createdAt: group.created_at })),
+    [myGroups, query]
   );
 
   // Públicos e privados intercalados pela data de criação, mais novos
   // primeiro -- a mesma ordem que a lista já tinha.
   const discoverItems = useMemo<ListItem[]>(() => {
-    const query = search.trim().toLowerCase();
     const matches = (name: string) => query.length === 0 || name.toLowerCase().includes(query);
     const items: ListItem[] = [
       ...discoverGroups
@@ -66,36 +79,44 @@ export default function GroupsList() {
         .map((group): ListItem => ({ kind: 'private', key: `p${group.id}`, group, createdAt: group.created_at })),
     ];
     return items.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  }, [discoverGroups, privateDiscoverGroups, search]);
-
-  if (loading) {
-    return <LoadingView />;
-  }
+  }, [discoverGroups, privateDiscoverGroups, query]);
 
   const items = tab === 'mine' ? myItems : discoverItems;
   const hasAnyGroup = myGroups.length > 0 || discoverGroups.length > 0 || privateDiscoverGroups.length > 0;
   const emptyText =
-    tab === 'mine'
-      ? 'Você ainda não participa de nenhum grupo.'
-      : search.trim().length > 0
-        ? 'Nenhum grupo encontrado com esse nome.'
+    query.length > 0
+      ? 'Nenhum grupo encontrado com esse nome.'
+      : tab === 'mine'
+        ? 'Você ainda não participa de nenhum grupo.'
         : 'Nenhum grupo encontrado.';
 
   return (
     <View style={styles.container}>
-      <UnderlineTabs tabs={TABS} active={tab} onChange={setTab} style={styles.tabs} />
+      <ScreenHeader
+        title="Grupos"
+        actions={
+          <>
+            <IconButton icon="add" onPress={() => router.push('/groups/new')} accessibilityLabel="Criar grupo" />
+            <IconButton
+              initials={getInitials(name ?? '')}
+              onPress={() => router.navigate('/profile')}
+              accessibilityLabel="Abrir perfil"
+            />
+          </>
+        }
+      />
 
-      {tab === 'discover' ? (
-        <View style={styles.searchContainer}>
-          <TextField
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Buscar grupos pelo nome"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-        </View>
-      ) : null}
+      <View style={styles.controls}>
+        <TextField
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Buscar grupos"
+          autoCapitalize="none"
+          autoCorrect={false}
+          style={styles.search}
+        />
+        <SegmentedControl options={TABS} active={tab} onChange={setTab} />
+      </View>
 
       {/* Com a lista já na tela, uma falha ao recarregar vira aviso acima
           dela em vez de apagar o que o usuário estava vendo. */}
@@ -105,7 +126,9 @@ export default function GroupsList() {
         </View>
       ) : null}
 
-      {error && !hasAnyGroup ? (
+      {loading ? (
+        <LoadingView />
+      ) : error && !hasAnyGroup ? (
         <View style={styles.centered}>
           <StatusText variant="error">{error}</StatusText>
         </View>
@@ -114,6 +137,7 @@ export default function GroupsList() {
           data={items}
           keyExtractor={(item) => item.key}
           contentContainerStyle={styles.listContent}
+          keyboardShouldPersistTaps="handled"
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} colors={[colors.primary]} />
           }
@@ -123,11 +147,12 @@ export default function GroupsList() {
               <PrivateGroupCard group={item.group} onRequested={refresh} />
             ) : (
               <Link href={`/groups/${item.group.id}`} asChild>
-                <TouchableOpacity>
+                <TouchableOpacity activeOpacity={0.8}>
                   <GroupCard
                     group={item.group}
                     isAdmin={adminGroupIds.has(item.group.id)}
                     pendingRequests={pendingRequestCounts.get(item.group.id) ?? 0}
+                    isMember={tab === 'mine'}
                   />
                 </TouchableOpacity>
               </Link>
@@ -135,7 +160,7 @@ export default function GroupsList() {
           }
           ListEmptyComponent={
             <View style={styles.centered}>
-              <Text style={styles.emptyText}>{emptyText}</Text>
+              <Text style={type.empty}>{emptyText}</Text>
             </View>
           }
         />
@@ -149,22 +174,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  tabs: {
-    marginHorizontal: 24,
-    marginTop: 8,
-    marginBottom: 12,
+  controls: {
+    paddingHorizontal: SCREEN_GUTTER,
+    paddingBottom: 16,
+    gap: 14,
   },
-  searchContainer: {
-    paddingHorizontal: 24,
-    paddingBottom: 8,
+  search: {
+    minHeight: 44,
+    fontSize: 14,
   },
   errorBanner: {
-    paddingHorizontal: 24,
+    paddingHorizontal: SCREEN_GUTTER,
     paddingBottom: 8,
   },
   listContent: {
-    paddingHorizontal: 24,
-    paddingTop: 4,
+    paddingHorizontal: SCREEN_GUTTER,
     paddingBottom: 24,
     flexGrow: 1,
   },
@@ -176,10 +200,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
-  },
-  emptyText: {
-    color: '#888',
-    fontSize: 15,
-    textAlign: 'center',
   },
 });

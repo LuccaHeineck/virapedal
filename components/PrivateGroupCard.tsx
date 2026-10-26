@@ -1,20 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { colors } from '../constants/colors';
+import { StyleSheet, Text, View } from 'react-native';
+import { colors, palette } from '../constants/colors';
+import { cardShadow, fonts, radii } from '../constants/theme';
 import { PrivateGroupPreview } from '../hooks/useGroups';
 import { useJoin } from '../hooks/useJoin';
+import { CardPill } from './CardPill';
 
 type PrivateGroupCardProps = {
   group: PrivateGroupPreview;
   // Chamado depois de a solicitação ser criada, para a lista recarregar e o
-  // card passar a mostrar "Solicitação enviada".
+  // card passar a mostrar "Solicitado".
   onRequested: () => void;
 };
-
-// Mesmos tons do selo "Privado" do GroupCard e da faixa de pendência da tela
-// do grupo.
-const PRIVATE_FG = '#4b5563';
-const PENDING_FG = '#a8681f';
 
 // Card de um grupo privado visto por quem não é membro: só o nome, quem
 // administra e o pedido de entrada -- sem foto, descrição nem membros, e sem
@@ -39,8 +36,8 @@ export function PrivateGroupCard({ group, onRequested }: PrivateGroupCardProps) 
   return (
     <View style={styles.card}>
       <View style={styles.row}>
-        <View style={styles.lockAvatar}>
-          <Ionicons name="lock-closed" size={22} color={PRIVATE_FG} />
+        <View style={styles.lockThumb}>
+          <Ionicons name="lock-closed-outline" size={22} color={palette.inkSecondary} />
         </View>
 
         <View style={styles.info}>
@@ -48,41 +45,24 @@ export function PrivateGroupCard({ group, onRequested }: PrivateGroupCardProps) 
             <Text style={styles.name} numberOfLines={1}>
               {group.name}
             </Text>
-            <View style={styles.badge}>
-              <Ionicons name="lock-closed" size={11} color={PRIVATE_FG} />
-              <Text style={styles.badgeText}>Privado</Text>
-            </View>
+            <Ionicons name="lock-closed-outline" size={12} color={palette.inkSecondary} accessibilityLabel="Privado" />
           </View>
 
+          <Text style={styles.description}>Grupo privado. Um admin aprova quem entra.</Text>
+
           {admins ? (
-            <View style={styles.metaRow}>
-              <Ionicons name="shield-checkmark-outline" size={14} color="#777" />
-              <Text style={styles.metaText} numberOfLines={1}>
-                Admin: {admins}
-              </Text>
-            </View>
+            <Text style={styles.metaText} numberOfLines={1}>
+              Admin: {admins}
+            </Text>
           ) : null}
         </View>
-      </View>
 
-      {group.has_pending_request ? (
-        <View style={styles.pending}>
-          <Ionicons name="time-outline" size={16} color={PENDING_FG} />
-          <Text style={styles.pendingText}>Solicitação enviada</Text>
-        </View>
-      ) : (
-        <TouchableOpacity
-          style={[styles.requestButton, submitting && styles.requestButtonDisabled]}
-          onPress={handleRequest}
-          disabled={submitting}
-          accessibilityRole="button">
-          {submitting ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.requestButtonText}>Solicitar entrada</Text>
-          )}
-        </TouchableOpacity>
-      )}
+        {group.has_pending_request ? (
+          <CardPill label="Solicitado" kind="pending" />
+        ) : (
+          <CardPill label="Solicitar" kind="request" onPress={handleRequest} loading={submitting} />
+        )}
+      </View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
@@ -91,101 +71,58 @@ export function PrivateGroupCard({ group, onRequested }: PrivateGroupCardProps) 
 
 const styles = StyleSheet.create({
   card: {
-    gap: 12,
-    padding: 12,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#ececec',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    gap: 10,
+    padding: 14,
+    backgroundColor: palette.surface,
+    borderRadius: radii.card,
+    ...cardShadow,
   },
   row: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 12,
   },
-  lockAvatar: {
+  lockThumb: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#eceef2',
+    backgroundColor: palette.neutralTagTint,
   },
   info: {
     flex: 1,
-    gap: 4,
+    minWidth: 0,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
+    marginBottom: 4,
   },
   name: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1a1a1a',
+    flexShrink: 1,
+    fontFamily: fonts.display,
+    fontSize: 15,
+    color: palette.ink,
   },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    backgroundColor: '#eceef2',
-  },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: PRIVATE_FG,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
+  description: {
+    fontFamily: fonts.body,
+    fontSize: 12.5,
+    lineHeight: 17.5,
+    color: palette.ink,
+    opacity: 0.72,
+    marginBottom: 7,
   },
   metaText: {
-    flexShrink: 1,
-    fontSize: 13,
-    color: '#777',
-  },
-  requestButton: {
-    minHeight: 40,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary,
-  },
-  requestButtonDisabled: {
-    opacity: 0.6,
-  },
-  requestButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  pending: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    minHeight: 40,
-    borderRadius: 10,
-    backgroundColor: '#f7ecdc',
-  },
-  pendingText: {
-    color: PENDING_FG,
-    fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.body,
+    fontSize: 11,
+    color: palette.ink,
+    opacity: 0.55,
   },
   error: {
+    fontFamily: fonts.body,
     color: colors.error,
-    fontSize: 13,
+    fontSize: 12.5,
   },
 });

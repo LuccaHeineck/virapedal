@@ -1,5 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Avatar } from './Avatar';
+import { palette } from '../constants/colors';
+import { fonts } from '../constants/theme';
 
 type AvatarStackPerson = {
   key: string | number;
@@ -42,7 +44,7 @@ export function AvatarStack({
   max = 4,
   size = 24,
   overflowStyle = 'count',
-  ringColor = '#fff',
+  ringColor = palette.surface,
 }: AvatarStackProps) {
   const shown = people.slice(0, max);
   const overflow = Math.max(total - shown.length, 0);
@@ -107,15 +109,15 @@ const styles = StyleSheet.create({
     zIndex: FADE_STEPS.length + 1,
   },
   faded: {
-    backgroundColor: '#8a919c',
+    backgroundColor: palette.inkInactive,
   },
   more: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#eceef2',
+    backgroundColor: palette.neutralTagTint,
   },
   moreText: {
-    fontWeight: '700',
-    color: '#4b5563',
+    fontFamily: fonts.bodyBold,
+    color: palette.inkSecondary,
   },
 });

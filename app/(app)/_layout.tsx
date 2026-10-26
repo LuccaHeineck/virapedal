@@ -1,18 +1,18 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import { BottomNav } from '../../components/BottomNav';
+import { palette } from '../../constants/colors';
 import { triggerHomeRefresh } from '../../lib/homeRefreshEmitter';
 
+// Ícones, rótulos e a ordem de exibição das abas moram no BottomNav. Todas
+// as abas desenham o próprio título dentro da tela, como no design.
 export default function AppLayout() {
   return (
-    <Tabs>
+    <Tabs
+      tabBar={(props) => <BottomNav {...props} />}
+      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: palette.bg } }}>
       <Tabs.Screen
         name="index"
-        options={{
-          title: 'Início',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'home' : 'home-outline'} color={color} size={size} />
-          ),
-        }}
+        options={{ title: 'Pedais' }}
         // useFocusEffect não dispara ao tocar numa aba já focada (sem
         // mudança de foco, sem novo evento) -- por isso o toque em "Início"
         // estando nela não recarregava nada. Avisa a tela via um pub-sub
@@ -29,16 +29,7 @@ export default function AppLayout() {
 
       <Tabs.Screen
         name="groups"
-        options={{
-          title: 'Grupos',
-          // A pilha aninhada em app/(app)/groups/_layout.tsx tem seu próprio
-          // cabeçalho por tela — sem isso, o cabeçalho das Tabs (deste nível)
-          // aparece empilhado em cima do dela.
-          headerShown: false,
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'people' : 'people-outline'} color={color} size={size} />
-          ),
-        }}
+        options={{ title: 'Grupos' }}
         // Um link para um pedal ou "Novo pedal" aberto a partir de outra aba
         // empurra aquela tela para dentro da pilha desta aba (as rotas
         // moram em app/(app)/groups/...). navigation.navigate('groups',
@@ -67,16 +58,7 @@ export default function AppLayout() {
       />
       <Tabs.Screen
         name="routes"
-        options={{
-          title: 'Rotas',
-          // A pilha aninhada em app/(app)/routes/_layout.tsx tem seu próprio
-          // cabeçalho por tela -- sem isto, o cabeçalho das Tabs empilha em
-          // cima do dela.
-          headerShown: false,
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'map' : 'map-outline'} color={color} size={size} />
-          ),
-        }}
+        options={{ title: 'Atividade' }}
         // Mesmo tratamento da aba "Grupos": um link para uma rota aberto a
         // partir de outra aba empurra aquela tela para dentro da pilha desta
         // aba. Resetar o estado da pilha aninhada diretamente troca para
@@ -103,15 +85,7 @@ export default function AppLayout() {
       />
       <Tabs.Screen
         name="profile"
-        options={{
-          title: 'Perfil',
-          // Pilha aninhada em app/(app)/profile/_layout.tsx tem seu próprio
-          // cabeçalho (com o botão de Configurações).
-          headerShown: false,
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'person' : 'person-outline'} color={color} size={size} />
-          ),
-        }}
+        options={{ title: 'Perfil' }}
         // Mesmo tratamento das abas "Grupos" e "Rotas": tocar em "Perfil"
         // estando em Configurações volta para o perfil.
         listeners={({ navigation }) => ({

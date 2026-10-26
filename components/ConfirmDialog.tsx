@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { ComponentProps, ReactNode, useRef } from 'react';
 import { ActivityIndicator, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { colors } from '../constants/colors';
+import { colors, palette } from '../constants/colors';
+import { fonts } from '../constants/theme';
 
 type ConfirmDialogProps = {
   visible: boolean;
@@ -60,7 +61,7 @@ export function ConfirmDialog({
             </TouchableOpacity>
             <TouchableOpacity style={[styles.button, styles.confirmButton]} onPress={onConfirm} disabled={loading}>
               {loading ? (
-                <ActivityIndicator size="small" color="#fff" />
+                <ActivityIndicator size="small" color={palette.surface} />
               ) : (
                 <Text style={styles.confirmButtonText}>{content.confirmLabel}</Text>
               )}
@@ -78,14 +79,14 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(17, 24, 39, 0.48)',
+    backgroundColor: 'rgba(36, 30, 26, 0.48)',
   },
   card: {
     width: '100%',
     maxWidth: 440,
     padding: 24,
-    borderRadius: 18,
-    backgroundColor: '#fff',
+    borderRadius: 16,
+    backgroundColor: palette.surface,
     alignItems: 'center',
   },
   icon: {
@@ -94,20 +95,21 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff1f0',
+    backgroundColor: palette.errorTint,
     marginBottom: 16,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
+    fontSize: 19,
+    fontFamily: fonts.displayHeavy,
+    color: palette.ink,
     textAlign: 'center',
   },
   message: {
     marginTop: 8,
+    fontFamily: fonts.body,
     fontSize: 15,
     lineHeight: 22,
-    color: '#6b7280',
+    color: palette.inkSecondary,
     textAlign: 'center',
   },
   extra: {
@@ -122,27 +124,27 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
-    minHeight: 46,
-    borderRadius: 10,
+    minHeight: 48,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cancelButton: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    backgroundColor: '#fff',
+    borderWidth: 1.5,
+    borderColor: palette.border,
+    backgroundColor: 'transparent',
   },
   cancelButtonText: {
-    color: '#374151',
+    color: palette.ink,
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: fonts.display,
   },
   confirmButton: {
     backgroundColor: colors.error,
   },
   confirmButtonText: {
-    color: '#fff',
+    color: palette.onPrimary,
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: fonts.display,
   },
 });

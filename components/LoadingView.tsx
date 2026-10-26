@@ -4,7 +4,7 @@ import { colors } from '../constants/colors';
 export function LoadingView() {
   return (
     <View style={styles.centered}>
-      <ActivityIndicator />
+      <ActivityIndicator color={colors.primary} />
     </View>
   );
 }

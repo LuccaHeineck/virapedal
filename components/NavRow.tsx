@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { colors } from '../constants/colors';
+import { colors, palette } from '../constants/colors';
+import { fonts } from '../constants/theme';
 
 type NavRowProps = {
   icon: keyof typeof Ionicons.glyphMap;
@@ -41,7 +42,7 @@ export function NavRow({ icon, label, hint, onPress, tone = 'default', showChevr
       {loading ? (
         <ActivityIndicator size="small" color={accent} />
       ) : showChevron ? (
-        <Ionicons name="chevron-forward" size={18} color="#c4c4c4" />
+        <Ionicons name="chevron-forward" size={18} color={palette.border} />
       ) : null}
     </TouchableOpacity>
   );
@@ -63,25 +64,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconWrapDefault: {
-    backgroundColor: '#eaf1fe',
+    backgroundColor: palette.primaryTint,
   },
   iconWrapDanger: {
-    backgroundColor: '#fdecea',
+    backgroundColor: palette.errorTint,
   },
   text: {
     flex: 1,
     gap: 1,
   },
   label: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1a1a1a',
+    fontSize: 14.5,
+    fontFamily: fonts.display,
+    color: palette.ink,
   },
   labelDanger: {
     color: colors.error,
   },
   hint: {
+    fontFamily: fonts.body,
     fontSize: 12,
-    color: '#8a8f98',
+    color: palette.inkInactive,
   },
 });

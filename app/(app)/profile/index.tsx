@@ -1,12 +1,16 @@
-import { Link, useFocusEffect } from 'expo-router';
+import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Avatar } from '../../../components/Avatar';
 import { EventRow } from '../../../components/EventRow';
+import { LoadingView } from '../../../components/LoadingView';
 import { RouteRow } from '../../../components/RouteRow';
+import { IconButton, ScreenHeader } from '../../../components/ScreenHeader';
+import { SegmentedControl } from '../../../components/SegmentedControl';
 import { StatusText } from '../../../components/StatusText';
-import { UnderlineTabs } from '../../../components/UnderlineTabs';
-import { colors, neutrals } from '../../../constants/colors';
+import { colors, palette } from '../../../constants/colors';
+import { cardShadow, fonts, radii, SCREEN_GUTTER, type } from '../../../constants/theme';
+import { useAuth } from '../../../context/AuthContext';
 import { MyEventParticipation, useMyEventParticipations } from '../../../hooks/useMyEventParticipations';
 import { useProfile } from '../../../hooks/useProfile';
 import { RouteListItem, useRoutes } from '../../../hooks/useRoutes';
@@ -64,9 +68,11 @@ const TABS: { key: ProfileTab; label: string }[] = [
 // junto), então os itens são heterogêneos e o renderItem decide pelo kind.
 type ListItem =
   | { kind: 'event'; key: string; event: MyEventParticipation }
-  | { kind: 'route'; key: string; route: RouteListItem; isLast: boolean };
+  | { kind: 'route'; key: string; route: RouteListItem };
 
 export default function Profile() {
+  const router = useRouter();
+  const { user } = useAuth();
   const [tab, setTab] = useState<ProfileTab>('rides');
   const [refreshing, setRefreshing] = useState(false);
   const { profile, loading, error, refresh: refreshProfile } = useProfile();
@@ -95,18 +101,32 @@ export default function Profile() {
 
   const totals = useMemo(() => sumRides(routes), [routes]);
 
+  const header = (
+    <ScreenHeader
+      title="Perfil"
+      topPadding={32}
+      actions={
+        <IconButton icon="settings-outline" onPress={() => router.push('/profile/settings')} accessibilityLabel="Configurações do perfil" />
+      }
+    />
+  );
+
   if (loading && !profile) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator />
+      <View style={styles.container}>
+        {header}
+        <LoadingView />
       </View>
     );
   }
 
   if (error || !profile) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.error}>{error ?? 'Não foi possível carregar seu perfil. Tente novamente.'}</Text>
+      <View style={styles.container}>
+        {header}
+        <View style={styles.centered}>
+          <StatusText variant="error">{error ?? 'Não foi possível carregar seu perfil. Tente novamente.'}</StatusText>
+        </View>
       </View>
     );
   }
@@ -114,12 +134,7 @@ export default function Profile() {
   const items: ListItem[] =
     tab === 'group'
       ? myEvents.map((event) => ({ kind: 'event', key: `e${event.id}`, event }))
-      : routes.map((route, index) => ({
-          kind: 'route',
-          key: `r${route.id}`,
-          route,
-          isLast: index === routes.length - 1,
-        }));
+      : routes.map((route) => ({ kind: 'route', key: `r${route.id}`, route }));
 
   const listError = tab === 'group' ? myEventsError : routesError;
   const listLoading = tab === 'group' ? myEventsLoading : routesLoading;
@@ -144,12 +159,11 @@ export default function Profile() {
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} colors={[colors.primary]} />
       }
-      // RouteRow já desenha a própria divisória.
-      ItemSeparatorComponent={tab === 'group' ? () => <View style={styles.separator} /> : undefined}
+      ItemSeparatorComponent={() => <View style={styles.separator} />}
       renderItem={({ item }) =>
         item.kind === 'event' ? (
           <Link href={`/groups/${item.event.group_id}/events/${item.event.id}?from=profile`} asChild>
-            <TouchableOpacity style={styles.row}>
+            <TouchableOpacity style={styles.row} activeOpacity={0.8}>
               <EventRow
                 title={item.event.title}
                 status={item.event.status}
@@ -163,42 +177,46 @@ export default function Profile() {
           </Link>
         ) : (
           <Link href={`/routes/${item.route.id}?from=profile`} asChild>
-            <TouchableOpacity style={styles.row} activeOpacity={0.6}>
-              <RouteRow route={item.route} isLast={item.isLast} />
+            <TouchableOpacity style={styles.row} activeOpacity={0.8}>
+              <RouteRow route={item.route} />
             </TouchableOpacity>
           </Link>
         )
       }
       ListHeaderComponent={
-        <View style={styles.header}>
-          <View style={styles.identity}>
-            <Avatar photo={profile.profile_photo_url} name={profile.name} size={80} />
-            <Text style={styles.name} numberOfLines={2}>
-              {profile.name}
-            </Text>
+        <>
+          {header}
+          <View style={styles.header}>
+            <View style={styles.identity}>
+              <Avatar photo={profile.profile_photo_url} name={profile.name} size={88} />
+              <Text style={styles.name} numberOfLines={2}>
+                {profile.name}
+              </Text>
+              {user?.email ? <Text style={styles.email}>{user.email}</Text> : null}
+            </View>
+
+            <View style={styles.stats}>
+              {stats.map((stat, index) => (
+                <View key={stat.key} style={[styles.stat, index > 0 && styles.statDivided]}>
+                  <Text style={styles.statValue}>
+                    {stat.value}
+                    {stat.unit ? <Text style={styles.statUnit}> {stat.unit}</Text> : null}
+                  </Text>
+                  <Text style={styles.statLabel}>{stat.label}</Text>
+                </View>
+              ))}
+            </View>
+
+            <SegmentedControl options={TABS} active={tab} onChange={setTab} />
+
+            {listError ? <StatusText variant="error">{listError}</StatusText> : null}
           </View>
-
-          <View style={styles.stats}>
-            {stats.map((stat, index) => (
-              <View key={stat.key} style={[styles.stat, index > 0 && styles.statDivided]}>
-                <Text style={styles.statValue}>
-                  {stat.value}
-                  {stat.unit ? <Text style={styles.statUnit}> {stat.unit}</Text> : null}
-                </Text>
-                <Text style={styles.statLabel}>{stat.label}</Text>
-              </View>
-            ))}
-          </View>
-
-          <UnderlineTabs tabs={TABS} active={tab} onChange={setTab} style={styles.tabs} />
-
-          {listError ? <StatusText variant="error">{listError}</StatusText> : null}
-        </View>
+        </>
       }
       ListEmptyComponent={
         listLoading ? null : (
           <View style={styles.centered}>
-            <Text style={styles.emptyText}>{emptyText}</Text>
+            <Text style={type.empty}>{emptyText}</Text>
           </View>
         )
       }
@@ -209,39 +227,42 @@ export default function Profile() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   listContent: {
     flexGrow: 1,
     paddingBottom: 24,
   },
   header: {
-    padding: 24,
-    paddingBottom: 8,
-    gap: 12,
-    alignItems: 'stretch',
+    paddingHorizontal: SCREEN_GUTTER,
+    paddingBottom: 16,
+    gap: 20,
   },
-  // Foto à esquerda e nome à direita, como nos perfis de redes sociais.
   identity: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 6,
   },
   name: {
-    flex: 1,
-    fontSize: 22,
-    fontWeight: '600',
+    marginTop: 6,
+    fontFamily: fonts.display,
+    fontSize: 17,
+    color: palette.ink,
+    textAlign: 'center',
   },
-  // Faixa de números estilo rede social: valor em destaque, rótulo pequeno
-  // embaixo, colunas iguais separadas por filetes.
+  email: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    color: palette.ink,
+    opacity: 0.6,
+  },
+  // Faixa de números: valor em destaque, rótulo pequeno embaixo, colunas
+  // iguais separadas por filetes, num card como os demais.
   stats: {
     flexDirection: 'row',
-    marginTop: 8,
     paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: neutrals.paper,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: neutrals.hairline,
+    borderRadius: radii.card,
+    backgroundColor: palette.surface,
+    ...cardShadow,
   },
   stat: {
     flex: 1,
@@ -249,48 +270,36 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   statDivided: {
-    borderLeftWidth: StyleSheet.hairlineWidth,
-    borderLeftColor: neutrals.hairline,
+    borderLeftWidth: 1,
+    borderLeftColor: palette.border,
   },
   statValue: {
+    fontFamily: fonts.displayHeavy,
     fontSize: 20,
-    fontWeight: '700',
-    color: neutrals.ink,
+    color: palette.ink,
     fontVariant: ['tabular-nums'],
   },
   statUnit: {
+    fontFamily: fonts.display,
     fontSize: 13,
-    fontWeight: '600',
-    color: neutrals.slate,
+    color: palette.inkSecondary,
   },
   statLabel: {
-    fontSize: 12,
-    color: neutrals.mute,
+    fontFamily: fonts.body,
+    fontSize: 11.5,
+    color: palette.ink,
+    opacity: 0.6,
   },
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
     padding: 24,
   },
-  error: {
-    color: '#c0392b',
-  },
-  tabs: {
-    marginTop: 16,
-  },
   separator: {
-    height: 1,
-    backgroundColor: '#f0f0f0',
-    marginHorizontal: 24,
-  },
-  emptyText: {
-    color: '#888',
-    fontSize: 15,
-    textAlign: 'center',
+    height: 10,
   },
   row: {
-    paddingHorizontal: 24,
+    paddingHorizontal: SCREEN_GUTTER,
   },
 });

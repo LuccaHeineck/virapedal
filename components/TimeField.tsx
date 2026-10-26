@@ -2,7 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { createElement, useState } from 'react';
 import { Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { colors } from '../constants/colors';
+import { colors, palette } from '../constants/colors';
+import { fonts } from '../constants/theme';
 
 type TimeFieldProps = {
   label: string;
@@ -67,7 +68,7 @@ export function TimeField({ label, value, onChange, disabled }: TimeFieldProps) 
         </TouchableOpacity>
         {value ? (
           <TouchableOpacity onPress={() => onChange('')} disabled={disabled} hitSlop={8} accessibilityLabel="Limpar horário" accessibilityRole="button">
-            <Ionicons name="close-circle" size={22} color="#999" />
+            <Ionicons name="close-circle" size={22} color={palette.inkInactive} />
           </TouchableOpacity>
         ) : null}
       </View>
@@ -132,11 +133,14 @@ export function TimeField({ label, value, onChange, disabled }: TimeFieldProps) 
 
 const styles = StyleSheet.create({
   container: {
-    gap: 4,
+    gap: 6,
   },
+  // Mesmo rótulo e caixa do TextField.
   label: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.bodyMedium,
+    fontSize: 12.5,
+    color: palette.ink,
+    opacity: 0.7,
   },
   inputRow: {
     flexDirection: 'row',
@@ -147,19 +151,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   input: {
-    borderWidth: 1,
+    minHeight: 46,
+    justifyContent: 'center',
+    borderWidth: 1.5,
     borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    backgroundColor: palette.surface,
   },
   valueText: {
-    fontSize: 16,
-    color: '#000',
+    fontFamily: fonts.body,
+    fontSize: 14.5,
+    color: palette.ink,
   },
   placeholderText: {
-    fontSize: 16,
-    color: '#999',
+    fontFamily: fonts.body,
+    fontSize: 14.5,
+    color: palette.inkInactive,
   },
   webInput: {
     // Ver comentário equivalente em DateField.tsx -- sem borderStyle, o
@@ -167,17 +175,16 @@ const styles = StyleSheet.create({
     boxSizing: 'border-box',
     width: '100%',
     borderStyle: 'solid',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.border,
-    borderRadius: 8,
-    paddingLeft: 12,
-    paddingRight: 12,
-    paddingTop: 10,
-    paddingBottom: 10,
-    fontSize: 16,
-    color: '#000',
-    backgroundColor: '#fff',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    borderRadius: 10,
+    minHeight: 46,
+    paddingLeft: 14,
+    paddingRight: 14,
+    fontSize: 14.5,
+    color: palette.ink,
+    backgroundColor: palette.surface,
+    fontFamily: fonts.body,
   },
   modalOverlay: {
     flex: 1,
@@ -192,7 +199,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.3)',
   },
   modalSheet: {
-    backgroundColor: '#fff',
+    backgroundColor: palette.surface,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     paddingBottom: 24,
@@ -206,12 +213,13 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   modalCancel: {
-    color: '#888',
+    color: palette.inkInactive,
+    fontFamily: fonts.body,
     fontSize: 16,
   },
   doneButtonText: {
     color: colors.primary,
-    fontWeight: '600',
+    fontFamily: fonts.bodySemi,
     fontSize: 16,
   },
 });

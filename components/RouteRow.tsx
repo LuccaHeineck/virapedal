@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, neutrals } from '../constants/colors';
+import { palette } from '../constants/colors';
+import { cardShadow, fonts, radii } from '../constants/theme';
 import {
   formatDayMonth,
   formatDistance,
@@ -10,26 +11,24 @@ import {
   RouteListItem,
   routeTimestamp,
 } from '../hooks/useRoutes';
-import { PhotoStack } from './PhotoStack';
+import { PHOTO_STACK_SIZE, PhotoStack } from './PhotoStack';
+import { Squiggle } from './Squiggle';
 import { TrailNode } from './TrailNode';
 
 type RouteRowProps = {
   route: RouteListItem;
-  // A última linha da lista dispensa a divisória de baixo.
-  isLast: boolean;
 };
 
-// Uma linha é texto à esquerda e a pilha de fotos à direita. Os números vêm
-// como colunas separadas por espaço, não como uma frase com pontinhos --
-// distância e tempo são duas leituras distintas, e assim se alinham entre
-// linhas vizinhas.
-export function RouteRow({ route, isLast }: RouteRowProps) {
+// Card de rota gravada: números em Sora no topo ("12,4 km · 48 min"), nome e
+// data embaixo, e a pilha de fotos à direita. Sem fotos, um mini traçado em
+// terracota ocupa o lugar, como no design.
+export function RouteRow({ route }: RouteRowProps) {
   const live = route.status === 'active';
   const paused = route.status === 'paused';
   const inProgress = live || paused;
 
   const distance = formatDistance(route.distance_meters);
-  // Só quando houve subida de fato: "↑ 0 m" numa linha de lista é ruído.
+  // Só quando houve subida de fato: "↑ 0 m" num card de lista é ruído.
   const climb = Number(route.elevation_gain_meters) > 0 ? formatElevation(route.elevation_gain_meters) : null;
   // Tempo em movimento quando o GPS já existe; até lá, o de relógio.
   const time = formatDuration(route.duration_seconds) ?? formatElapsed(route.started_at, route.finished_at);
@@ -38,115 +37,115 @@ export function RouteRow({ route, isLast }: RouteRowProps) {
   // dizer é que ela está aberta, e desde quando.
   const stateLine = live
     ? route.started_at
-      ? `gravando desde ${formatTime(route.started_at)}`
-      : 'gravando'
+      ? `Gravando desde ${formatTime(route.started_at)}`
+      : 'Gravando'
     : paused
       ? route.started_at
-        ? `pausada desde ${formatTime(route.started_at)}`
-        : 'pausada'
+        ? `Pausada desde ${formatTime(route.started_at)}`
+        : 'Pausada'
       : null;
 
+  const figures = [distance, time, climb ? `↑ ${climb}` : null].filter(Boolean).join(' · ');
+  const subtitle = [route.name ?? 'Rota sem nome', route.event_title, formatDayMonth(routeTimestamp(route))]
+    .filter(Boolean)
+    .join(' · ');
+  const hasPhotos = route.photo_paths.length > 0;
+
   return (
-    <View style={[styles.row, isLast && styles.rowLast]}>
+    <View style={styles.card}>
       <View style={styles.body}>
-        <View style={styles.titleLine}>
-          {live ? (
-            <View style={styles.liveMark}>
-              <TrailNode variant="live" />
-            </View>
-          ) : null}
-          <Text style={styles.name} numberOfLines={1}>
-            {route.name ?? 'Rota sem nome'}
-          </Text>
-        </View>
-
         {inProgress ? (
-          <Text style={[styles.state, live && styles.stateLive]}>{stateLine}</Text>
-        ) : distance || time ? (
-          <View style={styles.figures}>
-            {distance ? <Text style={styles.figure}>{distance}</Text> : null}
-            {time ? <Text style={styles.figure}>{time}</Text> : null}
-            {climb ? <Text style={styles.figure}>↑ {climb}</Text> : null}
-          </View>
-        ) : null}
-
-        <View style={styles.meta}>
-          <Text style={styles.metaText}>{formatDayMonth(routeTimestamp(route))}</Text>
-          {route.event_title ? (
-            <Text style={[styles.metaText, styles.metaEvent]} numberOfLines={1}>
-              {route.event_title}
+          <View style={styles.titleLine}>
+            {live ? (
+              <View style={styles.liveMark}>
+                <TrailNode variant="live" />
+              </View>
+            ) : null}
+            <Text style={[styles.headline, live && styles.headlineLive]} numberOfLines={1}>
+              {stateLine}
             </Text>
-          ) : null}
-        </View>
+          </View>
+        ) : (
+          <Text style={styles.headline} numberOfLines={1}>
+            {figures || 'Sem dados de GPS'}
+          </Text>
+        )}
+
+        <Text style={styles.meta} numberOfLines={1}>
+          {subtitle}
+        </Text>
       </View>
 
-      <PhotoStack paths={route.photo_paths} />
+      {/* Espaço fixo do tamanho da pilha de fotos, com ou sem foto: assim
+          todos os cards da lista têm a mesma altura. */}
+      <View style={styles.aside}>{hasPhotos ? <PhotoStack paths={route.photo_paths} /> : <MiniRoute />}</View>
     </View>
   );
 }
 
+// Traçado decorativo 40×24 em zigue-zague.
+const MINI_POINTS: [number, number][] = [
+  [1, 18],
+  [9, 9],
+  [16, 15],
+  [24, 4],
+  [32, 12],
+  [39, 6],
+];
+
+function MiniRoute() {
+  return <Squiggle points={MINI_POINTS} width={40} height={24} style={styles.mini} />;
+}
+
 const styles = StyleSheet.create({
-  row: {
+  card: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: neutrals.hairline,
-  },
-  rowLast: {
-    borderBottomWidth: 0,
+    justifyContent: 'space-between',
+    gap: 12,
+    padding: 14,
+    borderRadius: radii.card,
+    backgroundColor: palette.surface,
+    ...cardShadow,
   },
   body: {
     flex: 1,
-    gap: 4,
+    minWidth: 0,
   },
   titleLine: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   // O halo tem 20px de largura, mas o ponto em si é pequeno; compensa-se a
-  // margem para o nome não parecer afastado do sinal.
+  // margem para o texto não parecer afastado do sinal.
   liveMark: {
     marginLeft: -6,
     marginRight: 2,
   },
-  // Tamanhos alinhados ao EventRow: as duas listas aparecem lado a lado nas
-  // abas do Perfil e não devem parecer componentes de apps diferentes. A
-  // rota ao vivo já se destaca pelo ponto azul, sem precisar de fonte maior.
-  name: {
+  headline: {
     flexShrink: 1,
-    fontSize: 16,
-    fontWeight: '600',
-    color: neutrals.ink,
-  },
-  figures: {
-    flexDirection: 'row',
-    gap: 14,
-  },
-  figure: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: neutrals.slate,
+    fontFamily: fonts.display,
+    fontSize: 14.5,
+    color: palette.ink,
+    marginBottom: 3,
     fontVariant: ['tabular-nums'],
   },
-  state: {
-    fontSize: 14,
-    color: neutrals.slate,
-  },
-  stateLive: {
-    color: colors.primary,
-    fontWeight: '500',
+  headlineLive: {
+    color: palette.primary,
   },
   meta: {
-    flexDirection: 'row',
-    gap: 10,
+    fontFamily: fonts.body,
+    fontSize: 11.5,
+    color: palette.ink,
+    opacity: 0.6,
   },
-  metaText: {
-    fontSize: 14,
-    color: neutrals.mute,
+  aside: {
+    width: PHOTO_STACK_SIZE,
+    height: PHOTO_STACK_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  metaEvent: {
-    flexShrink: 1,
+  mini: {
+    opacity: 0.6,
   },
 });

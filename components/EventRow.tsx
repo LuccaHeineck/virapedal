@@ -1,26 +1,27 @@
-import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors } from '../constants/colors';
+import { palette } from '../constants/colors';
+import { cardShadow, fonts, radii } from '../constants/theme';
 import { EventStatus, EVENT_STATUS_LABELS } from '../hooks/useGroupEvents';
 import { isPastEventDate } from '../lib/eventDates';
-import { GroupImage } from './GroupImage';
+import { Tag, TagTone } from './Tag';
 
-function formatDate(dateStr: string) {
-  const [year, month, day] = dateStr.split('-');
-  return `${day}/${month}/${year}`;
+const MONTHS_SHORT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
+function dateParts(dateStr: string) {
+  const [, month, day] = dateStr.split('-');
+  return { month: MONTHS_SHORT[Number(month) - 1] ?? '', day: String(Number(day)) };
 }
 
 function formatTime(timeStr: string) {
   return timeStr.slice(0, 5);
 }
 
-// 'completed' usa cinza neutro de proposito: verde fica reservado ao badge
-// de "Participando", que significa outra coisa -- dois badges verdes na
-// mesma linha confundiam a leitura.
-const STATUS_COLORS: Record<EventStatus, { background: string; text: string }> = {
-  scheduled: { background: '#e3ecfd', text: colors.primary },
-  completed: { background: '#d9d9d9', text: '#3f3f3f' },
-  cancelled: { background: '#f5e2e0', text: colors.error },
+// Concluído e cancelado em neutro/vermelho: o teal fica com o "agendado",
+// que nem ganha tag aqui -- é o estado normal de um card de pedal.
+const STATUS_TONES: Record<EventStatus, TagTone> = {
+  scheduled: 'teal',
+  completed: 'neutral',
+  cancelled: 'error',
 };
 
 type EventRowProps = {
@@ -30,60 +31,54 @@ type EventRowProps = {
   startTime: string;
   meetingPoint: string | null;
   groupName: string;
-  groupImagePath: string | null;
-  // Omitido = não mostra o badge (ex: lista "Meus pedais", onde todo item já
-  // é uma participação por definição -- o badge seria sempre igual, ruído).
+  // Mantido na assinatura das telas que já passam a imagem do grupo; o card
+  // do design mostra o bloco de data no lugar dela.
+  groupImagePath?: string | null;
+  // Omitido = não mostra a tag (ex: lista "Meus pedais", onde todo item já
+  // é uma participação por definição -- a tag seria sempre igual, ruído).
   isParticipant?: boolean;
 };
 
-export function EventRow({ title, status, eventDate, startTime, meetingPoint, groupName, groupImagePath, isParticipant }: EventRowProps) {
+// Card de pedal: bloco de data à esquerda (mês/dia em terracota), título,
+// "grupo · hora · ponto de encontro" e as tags de participação e status.
+// Pedais que já passaram usam o card "muted", sem sombra.
+export function EventRow({ title, status, eventDate, startTime, meetingPoint, groupName, isParticipant }: EventRowProps) {
   // 'cancelled' e 'completed' vindos do banco mandam; so um pedal ainda
   // 'scheduled' cuja data ja passou e promovido a concluido na exibicao --
   // assim um pedal cancelado no passado nao aparece como se tivesse rolado.
   const effectiveStatus: EventStatus =
     status === 'scheduled' && isPastEventDate(eventDate) ? 'completed' : status;
-  const statusColors = STATUS_COLORS[effectiveStatus];
+  const past = effectiveStatus !== 'scheduled';
+  const { month, day } = dateParts(eventDate);
+  const meta = [groupName, formatTime(startTime), meetingPoint].filter(Boolean).join(' · ');
 
   return (
-    <View style={styles.container}>
-      <GroupImage path={groupImagePath} name={groupName} size={44} />
+    <View style={[styles.card, past ? styles.cardPast : styles.cardUpcoming]}>
+      <View style={[styles.dateBlock, past && styles.dateBlockPast]}>
+        <Text style={[styles.month, past && styles.datePast]}>{month}</Text>
+        <Text style={[styles.day, past && styles.datePast]}>{day}</Text>
+      </View>
 
       <View style={styles.info}>
-        <View style={styles.titleRow}>
-          <Text style={styles.title} numberOfLines={1}>
-            {title}
-          </Text>
-          {effectiveStatus !== 'scheduled' ? (
-            <View style={[styles.badge, styles.statusBadge, { backgroundColor: statusColors.background }]}>
-              <Text style={[styles.badgeText, { color: statusColors.text }]}>{EVENT_STATUS_LABELS[effectiveStatus]}</Text>
-            </View>
-          ) : null}
-        </View>
+        <Text style={styles.title} numberOfLines={1}>
+          {title}
+        </Text>
+        <Text style={styles.meta} numberOfLines={1}>
+          {meta}
+        </Text>
 
-        <View style={styles.metaRow}>
-          <Ionicons name="time-outline" size={13} color="#666" />
-          <Text style={styles.meta}>
-            {formatDate(eventDate)} às {formatTime(startTime)} · {groupName}
-          </Text>
-        </View>
-
-        {meetingPoint ? (
-          <View style={styles.metaRow}>
-            <Ionicons name="location-outline" size={13} color="#666" />
-            <Text style={styles.meta}>{meetingPoint}</Text>
-          </View>
-        ) : null}
-
-        {isParticipant !== undefined ? (
-          <View style={[styles.badge, styles.participationBadge, isParticipant ? styles.participatingBadge : styles.notParticipatingBadge]}>
-            <Ionicons
-              name={isParticipant ? 'checkmark-circle' : 'ellipse-outline'}
-              size={12}
-              color={isParticipant ? colors.success : '#888'}
-            />
-            <Text style={[styles.badgeText, { color: isParticipant ? colors.success : '#888' }]}>
-              {isParticipant ? 'Participando' : 'Não participando'}
-            </Text>
+        {isParticipant !== undefined || past ? (
+          <View style={styles.tags}>
+            {isParticipant !== undefined && !past ? (
+              <Tag
+                label={isParticipant ? 'Você vai' : 'Sem confirmação'}
+                tone={isParticipant ? 'green' : 'neutral'}
+                size="compact"
+              />
+            ) : null}
+            {past ? (
+              <Tag label={EVENT_STATUS_LABELS[effectiveStatus]} tone={STATUS_TONES[effectiveStatus]} size="compact" />
+            ) : null}
           </View>
         ) : null}
       </View>
@@ -92,61 +87,69 @@ export function EventRow({ title, status, eventDate, startTime, meetingPoint, gr
 }
 
 const styles = StyleSheet.create({
-  container: {
+  card: {
     flexDirection: 'row',
     gap: 12,
-    paddingVertical: 12,
+    padding: 14,
+    borderRadius: radii.card,
+  },
+  cardUpcoming: {
+    backgroundColor: palette.surface,
+    ...cardShadow,
+  },
+  cardPast: {
+    backgroundColor: palette.surfaceMuted,
+    paddingVertical: 13,
+  },
+  dateBlock: {
+    width: 46,
+    alignSelf: 'flex-start',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 1,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: palette.primaryTint,
+  },
+  dateBlockPast: {
+    backgroundColor: palette.neutralTagTint,
+  },
+  month: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 9.5,
+    letterSpacing: 0.57,
+    textTransform: 'uppercase',
+    color: palette.primaryInk,
+  },
+  day: {
+    fontFamily: fonts.displayHeavy,
+    fontSize: 17,
+    lineHeight: 19,
+    color: palette.primaryInkStrong,
+  },
+  datePast: {
+    color: palette.neutralTag,
   },
   info: {
     flex: 1,
-    gap: 4,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    minWidth: 0,
   },
   title: {
-    fontSize: 16,
-    fontWeight: '600',
-    flexShrink: 1,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
+    fontFamily: fonts.display,
+    fontSize: 14.5,
+    color: palette.ink,
+    marginBottom: 3,
   },
   meta: {
-    fontSize: 14,
-    color: '#666',
-    flexShrink: 1,
+    fontFamily: fonts.body,
+    fontSize: 11.5,
+    color: palette.ink,
+    opacity: 0.62,
   },
-  badge: {
+  tags: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    alignSelf: 'flex-start',
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  // Empurra o badge para a borda direita: sem isto ele fica colado ao fim
-  // do titulo e a coluna de badges vira um serrilhado, porque cada pedal
-  // tem um nome de tamanho diferente.
-  statusBadge: {
-    marginLeft: 'auto',
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  participationBadge: {
-    marginTop: 2,
-  },
-  participatingBadge: {
-    backgroundColor: '#e1f3e8',
-  },
-  notParticipatingBadge: {
-    backgroundColor: colors.placeholder,
+    gap: 6,
+    marginTop: 7,
   },
 });

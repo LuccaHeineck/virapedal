@@ -4,9 +4,10 @@ import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View }
 import { Avatar } from '../../../../components/Avatar';
 import { LoadingView } from '../../../../components/LoadingView';
 import { StatusText } from '../../../../components/StatusText';
-import { colors } from '../../../../constants/colors';
+import { colors, palette } from '../../../../constants/colors';
 import { useGroup } from '../../../../hooks/useGroup';
 import { JoinRequestRow, useJoinRequests } from '../../../../hooks/useJoinRequests';
+import { fonts } from '../../../../constants/theme';
 
 // "agora", "há 5 min", "há 3 h", "há 2 dias" -- e a data a partir de uma
 // semana, quando "há 23 dias" já diz menos que o dia em si.
@@ -64,7 +65,7 @@ function RequestItem({ request, responding, disabled, onApprove, onReject }: Req
             disabled={disabled}
             accessibilityRole="button"
             accessibilityLabel={`Recusar ${name}`}>
-            <Ionicons name="close" size={20} color="#6b7280" />
+            <Ionicons name="close" size={20} color={palette.inkSecondary} />
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.action, styles.approve]}
@@ -72,7 +73,7 @@ function RequestItem({ request, responding, disabled, onApprove, onReject }: Req
             disabled={disabled}
             accessibilityRole="button"
             accessibilityLabel={`Aprovar ${name}`}>
-            <Ionicons name="checkmark" size={20} color="#fff" />
+            <Ionicons name="checkmark" size={20} color={palette.surface} />
           </TouchableOpacity>
         </View>
       )}
@@ -163,13 +164,13 @@ const styles = StyleSheet.create({
   },
   header: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#6b7280',
+    fontFamily: fonts.bodyMedium,
+    color: palette.inkSecondary,
     paddingBottom: 4,
   },
   separator: {
     height: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: palette.border,
   },
   errorBanner: {
     paddingHorizontal: 24,
@@ -193,12 +194,13 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#1a1a1a',
+    fontFamily: fonts.bodySemi,
+    color: palette.ink,
   },
   meta: {
+    fontFamily: fonts.body,
     fontSize: 13,
-    color: '#666',
+    color: palette.inkSecondary,
   },
   actions: {
     flexDirection: 'row',
@@ -212,7 +214,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   reject: {
-    backgroundColor: '#f1f2f4',
+    backgroundColor: palette.border,
   },
   approve: {
     backgroundColor: colors.primary,
@@ -234,17 +236,18 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#eaf1fe',
+    backgroundColor: palette.primaryTint,
     marginBottom: 14,
   },
   emptyTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1a1a1a',
+    fontFamily: fonts.bodySemi,
+    color: palette.ink,
   },
   emptyHint: {
+    fontFamily: fonts.body,
     fontSize: 13,
-    color: '#888',
+    color: palette.inkInactive,
     marginTop: 4,
     textAlign: 'center',
   },
