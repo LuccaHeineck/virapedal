@@ -25,6 +25,9 @@ export default function ProfileSettings() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [removingPhoto, setRemovingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  // A foto é salva assim que escolhida (o "Salvar" é só do nome), então a
+  // confirmação aparece aqui para ninguém procurar o botão.
+  const [photoSuccess, setPhotoSuccess] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation>(null);
@@ -61,6 +64,7 @@ export default function ProfileSettings() {
       return;
     }
     setPhotoError(null);
+    setPhotoSuccess(null);
 
     const image = await pickImage();
     if (!image) {
@@ -71,15 +75,18 @@ export default function ProfileSettings() {
     const updateError = await updatePhoto(image);
     setUploadingPhoto(false);
     setPhotoError(updateError);
+    setPhotoSuccess(updateError ? null : 'Foto de perfil atualizada!');
   }
 
   async function handleRemovePhoto() {
     setPhotoError(null);
+    setPhotoSuccess(null);
     setRemovingPhoto(true);
     const removeError = await removePhoto();
     setRemovingPhoto(false);
     setConfirmation(null);
     setPhotoError(removeError);
+    setPhotoSuccess(removeError ? null : 'Foto de perfil removida.');
   }
 
   async function handleSignOut() {
@@ -146,6 +153,7 @@ export default function ProfileSettings() {
         </View>
 
         {visiblePhotoError ? <StatusText variant="error">{visiblePhotoError}</StatusText> : null}
+        {photoSuccess && !visiblePhotoError ? <StatusText variant="success">{photoSuccess}</StatusText> : null}
 
         <TextField
           label="Nome"
