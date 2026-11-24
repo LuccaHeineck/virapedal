@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { colors } from '../constants/colors';
+import { colors, palette } from '../constants/colors';
+import { fonts } from '../constants/theme';
 import { EventStatus } from '../hooks/useGroupEvents';
 import { todayDateString } from '../lib/eventDates';
 import { supabase } from '../lib/supabase';
@@ -89,7 +90,7 @@ export function PedalSearch({ onSelectPedal }: PedalSearchProps) {
   return (
     <View style={styles.container}>
       <View style={styles.searchField}>
-        <Ionicons name="search-outline" size={20} color="#777" />
+        <Ionicons name="search-outline" size={20} color={palette.inkInactive} />
         <TextInput
           style={styles.input}
           value={query}
@@ -104,7 +105,7 @@ export function PedalSearch({ onSelectPedal }: PedalSearchProps) {
         />
         {query.length > 0 ? (
           <TouchableOpacity onPress={() => setQuery('')} accessibilityRole="button" accessibilityLabel="Limpar busca">
-            <Ionicons name="close-circle" size={20} color="#777" />
+            <Ionicons name="close-circle" size={20} color={palette.inkInactive} />
           </TouchableOpacity>
         ) : null}
       </View>
@@ -169,12 +170,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     paddingHorizontal: 14,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.border,
-    borderRadius: 12,
-    backgroundColor: '#fff',
+    borderRadius: 10,
+    backgroundColor: palette.surface,
   },
-  input: { flex: 1, paddingVertical: 10, fontSize: 16 },
+  input: { flex: 1, paddingVertical: 10, fontFamily: fonts.body, fontSize: 14.5, color: palette.ink },
   filters: { flexDirection: 'row', gap: 8 },
   filter: {
     paddingHorizontal: 14,
@@ -183,10 +184,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.placeholder,
   },
   filterActive: { backgroundColor: colors.primary },
-  filterText: { color: '#555', fontSize: 14, fontWeight: '600' },
-  filterTextActive: { color: '#fff' },
+  filterText: { color: palette.segmentInk, fontSize: 13, fontFamily: fonts.display },
+  filterTextActive: { color: palette.onPrimary },
   list: { flex: 1 },
-  separator: { height: 1, backgroundColor: '#f0f0f0' },
+  separator: { height: 10 },
   empty: { paddingTop: 32, alignItems: 'center' },
-  emptyText: { color: '#888', fontSize: 15, textAlign: 'center' },
+  emptyText: { color: palette.inkInactive, fontFamily: fonts.body, fontSize: 13, textAlign: 'center' },
 });

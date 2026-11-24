@@ -1,6 +1,5 @@
-import { Ionicons } from '@expo/vector-icons';
-import { Stack, useRouter } from 'expo-router';
-import { TouchableOpacity } from 'react-native';
+import { Stack } from 'expo-router';
+import { stackScreenOptions } from '../../../constants/theme';
 
 // um reload monta a tela sozinha sem o index, ai nao tinha pra onde voltar, agora tem
 export const unstable_settings = {
@@ -8,35 +7,12 @@ export const unstable_settings = {
 }
 
 export default function GroupsLayout() {
-  const router = useRouter();
-
   return (
-    <Stack>
-      <Stack.Screen
-        name="index"
-        options={{
-          title: 'Grupos',
-          // "index" é sempre a raiz desta aba -- o initialRouteName acima
-          // (necessário pro F5 funcionar em rotas aninhadas) às vezes
-          // sintetiza histórico residual que faz o header mostrar um botão
-          // de voltar aqui indevidamente. headerBackVisible:false não é
-          // respeitado de forma confiável no React Native Web, então força
-          // via headerLeft mesmo (mesma categoria de limitação do
-          // Alert.alert nesse ambiente).
-          headerBackVisible: false,
-          headerLeft: () => null,
-          headerRight: () => (
-            <TouchableOpacity
-              onPress={() => router.push('/groups/new')}
-              hitSlop={8}
-              style={{ marginRight: 12 }}
-              accessibilityLabel="Criar grupo"
-              accessibilityRole="button">
-              <Ionicons name="add" size={26} color="#2f6feb" />
-            </TouchableOpacity>
-          ),
-        }}
-      />
+    <Stack screenOptions={stackScreenOptions}>
+      {/* A lista desenha o próprio cabeçalho (título, "+" e perfil), como no
+          design. Sem o header nativo também some o "voltar" residual que o
+          initialRouteName acima às vezes sintetizava aqui. */}
+      <Stack.Screen name="index" options={{ title: 'Grupos', headerShown: false }} />
       <Stack.Screen name="new" options={{ title: 'Novo grupo', presentation: 'modal' }} />
       <Stack.Screen name="[id]/index" options={{ title: 'Grupo' }} />
       <Stack.Screen name="[id]/edit" options={{ title: 'Editar grupo' }} />

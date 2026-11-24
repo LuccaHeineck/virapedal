@@ -7,9 +7,10 @@ import { ConfirmDialog } from '../../../../components/ConfirmDialog';
 import { LoadingView } from '../../../../components/LoadingView';
 import { MemberRow } from '../../../../components/MemberRow';
 import { StatusText } from '../../../../components/StatusText';
-import { colors } from '../../../../constants/colors';
+import { colors, palette } from '../../../../constants/colors';
 import { useAuth } from '../../../../context/AuthContext';
 import { GroupMemberRow, useGroupMembers } from '../../../../hooks/useGroupMembers';
+import { fonts } from '../../../../constants/theme';
 
 export default function GroupMembers() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -184,13 +185,13 @@ const styles = StyleSheet.create({
   },
   header: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#6b7280',
+    fontFamily: fonts.bodyMedium,
+    color: palette.inkSecondary,
     paddingBottom: 4,
   },
   separator: {
     height: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: palette.border,
   },
   errorBanner: {
     paddingHorizontal: 24,
@@ -203,7 +204,8 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   emptyText: {
-    color: '#888',
+    color: palette.inkInactive,
+    fontFamily: fonts.body,
     fontSize: 15,
   },
   sheetHeader: {
@@ -214,7 +216,7 @@ const styles = StyleSheet.create({
   sheetName: {
     flexShrink: 1,
     fontSize: 16,
-    fontWeight: '700',
-    color: '#1a1a1a',
+    fontFamily: fonts.bodyBold,
+    color: palette.ink,
   },
 });

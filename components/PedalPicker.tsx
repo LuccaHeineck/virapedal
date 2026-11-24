@@ -1,7 +1,8 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { neutrals } from '../constants/colors';
+import { neutrals, palette } from '../constants/colors';
 import { LinkableEvent } from '../hooks/useLinkableEvents';
 import { formatShortDate } from '../hooks/useRoutes';
+import { fonts } from '../constants/theme';
 
 type PedalPickerProps = {
   title: string;
@@ -90,9 +91,10 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   sectionTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontFamily: fonts.display,
+    fontSize: 13,
     color: neutrals.ink,
+    opacity: 0.7,
   },
   options: {
     gap: 2,
@@ -111,21 +113,23 @@ const styles = StyleSheet.create({
     borderColor: neutrals.hairline,
   },
   markSelected: {
-    borderColor: neutrals.ink,
+    borderColor: palette.primary,
     borderWidth: 4.5,
   },
   body: {
     flex: 1,
   },
   title: {
+    fontFamily: fonts.body,
     fontSize: 15,
     color: neutrals.slate,
   },
   titleSelected: {
     color: neutrals.ink,
-    fontWeight: '600',
+    fontFamily: fonts.bodySemi,
   },
   hint: {
+    fontFamily: fonts.body,
     fontSize: 12,
     color: neutrals.mute,
     marginTop: 1,
@@ -134,21 +138,25 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   date: {
+    fontFamily: fonts.body,
     fontSize: 13,
     color: neutrals.slate,
     fontVariant: ['tabular-nums'],
   },
   time: {
+    fontFamily: fonts.body,
     fontSize: 12,
     color: neutrals.mute,
     fontVariant: ['tabular-nums'],
     marginTop: 1,
   },
   empty: {
+    fontFamily: fonts.body,
     fontSize: 13,
     color: neutrals.mute,
   },
   privacy: {
+    fontFamily: fonts.body,
     fontSize: 12,
     color: neutrals.mute,
     lineHeight: 16,

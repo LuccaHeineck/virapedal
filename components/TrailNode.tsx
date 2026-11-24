@@ -1,5 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-import { colors, neutrals } from '../constants/colors';
+import { colors, neutrals, palette } from '../constants/colors';
 
 // Os nós da trilha. "live" é o único que usa azul -- é o sinal de "gravando
 // agora", e por isso ganha também o halo, que nenhum outro estado tem.
@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
     width: HALO_SIZE,
     height: HALO_SIZE,
     borderRadius: HALO_SIZE / 2,
-    backgroundColor: '#e3ecfd',
+    backgroundColor: palette.primaryTint,
     alignItems: 'center',
     justifyContent: 'center',
   },

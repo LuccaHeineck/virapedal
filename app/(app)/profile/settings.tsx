@@ -5,11 +5,12 @@ import { Button } from '../../../components/Button';
 import { ConfirmDialog } from '../../../components/ConfirmDialog';
 import { StatusText } from '../../../components/StatusText';
 import { TextField } from '../../../components/TextField';
-import { colors } from '../../../constants/colors';
+import { colors, palette } from '../../../constants/colors';
 import { useAuth } from '../../../context/AuthContext';
 import { useImageUpload } from '../../../hooks/useImageUpload';
 import { useProfile } from '../../../hooks/useProfile';
 import { supabase } from '../../../lib/supabase';
+import { fonts } from '../../../constants/theme';
 
 type Confirmation = 'removePhoto' | 'signOut' | null;
 
@@ -125,7 +126,7 @@ export default function ProfileSettings() {
             <Avatar photo={profile.profile_photo_url} name={profile.name} size={96} />
             {photoBusy ? (
               <View style={styles.photoOverlay}>
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={palette.surface} />
               </View>
             ) : null}
           </TouchableOpacity>
@@ -241,7 +242,7 @@ const styles = StyleSheet.create({
   },
   photoAction: {
     color: colors.primary,
-    fontWeight: '600',
+    fontFamily: fonts.bodySemi,
   },
   photoActionDestructive: {
     color: colors.error,
@@ -251,7 +252,7 @@ const styles = StyleSheet.create({
   },
   readOnlyInput: {
     backgroundColor: colors.placeholder,
-    color: '#666',
+    color: palette.inkSecondary,
   },
   saveButton: {
     marginTop: 8,

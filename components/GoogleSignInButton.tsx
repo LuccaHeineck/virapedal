@@ -1,4 +1,6 @@
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { palette } from '../constants/colors';
+import { fonts } from '../constants/theme';
 
 type Props = {
   busy: boolean;
@@ -12,7 +14,7 @@ export function GoogleSignInButton({ busy, onPress }: Props) {
       onPress={onPress}
       disabled={busy}>
       {busy ? (
-        <ActivityIndicator color="#2f6feb" />
+        <ActivityIndicator color={palette.primary} />
       ) : (
         <>
           <Text style={styles.icon}>G</Text>
@@ -29,23 +31,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    borderWidth: 1,
-    borderColor: '#d0d0d0',
-    borderRadius: 8,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
+    minHeight: 48,
+    borderWidth: 1.5,
+    borderColor: palette.border,
+    borderRadius: 12,
+    backgroundColor: palette.surface,
   },
   buttonDisabled: {
     opacity: 0.5,
   },
   icon: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: fonts.bodyBold,
     color: '#4285F4',
   },
   text: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1f1f1f',
+    fontSize: 15,
+    fontFamily: fonts.display,
+    color: palette.ink,
   },
 });

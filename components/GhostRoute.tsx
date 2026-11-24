@@ -1,14 +1,12 @@
 import { StyleSheet, View } from 'react-native';
-import { neutrals } from '../constants/colors';
+import { palette } from '../constants/colors';
 
-// Um traçado fantasma: início e fim ligados por uma linha tracejada reta,
-// sugerindo o percurso sem fingir ser um mapa.
+// Um traçado fantasma: início e fim ligados por uma linha tracejada,
+// sugerindo o percurso sem fingir ser um mapa. É o estado vazio do design:
+// tracejado terracota bem esmaecido.
 //
 // Os traços são Views separadas porque o projeto não tem react-native-svg, e
 // borderStyle: 'dashed' em um lado só é inconsistente no Android.
-// Um pouco mais escuro que neutrals.hairline: no tom das divisórias o traço
-// sumia e passava por sujeira na tela em vez de desenho.
-const GHOST = '#ccd2da';
 const DASH_COUNT = 12;
 
 export function GhostRoute() {
@@ -30,22 +28,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 5,
     height: 48,
+    opacity: 0.45,
   },
   dash: {
-    width: 8,
+    width: 6,
     height: 2,
     borderRadius: 1,
-    backgroundColor: GHOST,
+    backgroundColor: palette.primary,
   },
   endpoint: {
     width: 9,
     height: 9,
     borderRadius: 5,
     borderWidth: 2,
-    borderColor: GHOST,
-    backgroundColor: neutrals.paper,
+    borderColor: palette.primary,
+    backgroundColor: palette.bg,
   },
   endpointEnd: {
-    backgroundColor: GHOST,
+    backgroundColor: palette.primary,
   },
 });

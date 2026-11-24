@@ -1,5 +1,6 @@
 import { Image, StyleSheet, Text, View } from 'react-native';
-import { colors } from '../constants/colors';
+import { palette } from '../constants/colors';
+import { fonts } from '../constants/theme';
 import { useSignedImageUrl } from '../hooks/useSignedImageUrl';
 import { AVATARS_BUCKET, isExternalPhotoUrl } from '../lib/avatars';
 
@@ -8,6 +9,17 @@ type AvatarProps = {
   name: string;
   size?: number;
 };
+
+// Até duas iniciais: primeira letra do primeiro e do último nome.
+export function getInitials(name: string) {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) {
+    return '?';
+  }
+  const first = words[0].charAt(0);
+  const last = words.length > 1 ? words[words.length - 1].charAt(0) : '';
+  return (first + last).toUpperCase();
+}
 
 export function Avatar({ photo, name, size = 44 }: AvatarProps) {
   const storagePath = photo && !isExternalPhotoUrl(photo) ? photo : null;
@@ -22,8 +34,8 @@ export function Avatar({ photo, name, size = 44 }: AvatarProps) {
 
   return (
     <View style={[styles.placeholder, shape]}>
-      <Text style={[styles.placeholderText, { fontSize: Math.round(size * 0.4) }]}>
-        {name.trim().charAt(0).toUpperCase() || '?'}
+      <Text style={[styles.placeholderText, { fontSize: Math.max(10, Math.round(size * 0.32)) }]}>
+        {getInitials(name)}
       </Text>
     </View>
   );
@@ -31,15 +43,15 @@ export function Avatar({ photo, name, size = 44 }: AvatarProps) {
 
 const styles = StyleSheet.create({
   image: {
-    backgroundColor: colors.placeholder,
+    backgroundColor: palette.segmentTrack,
   },
   placeholder: {
-    backgroundColor: colors.primary,
+    backgroundColor: palette.avatarTint,
     alignItems: 'center',
     justifyContent: 'center',
   },
   placeholderText: {
-    color: '#fff',
-    fontWeight: '600',
+    fontFamily: fonts.display,
+    color: palette.primaryInk,
   },
 });

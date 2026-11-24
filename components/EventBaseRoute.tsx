@@ -2,6 +2,8 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { EventBaseRoute as BaseRoute } from '../hooks/useEventBaseRoute';
 import { useRoutePoints } from '../hooks/useRoutePoints';
 import { formatDistance, formatDuration, formatElevation } from '../hooks/useRoutes';
+import { palette } from '../constants/colors';
+import { cardShadow, fonts, radii, type } from '../constants/theme';
 import { RouteMap } from './RouteMap/RouteMap';
 
 type EventBaseRouteProps = {
@@ -50,28 +52,31 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   title: {
-    fontSize: 17,
-    fontWeight: '600',
+    ...type.sectionLabel,
   },
+  // Números no mesmo card claro dos outros blocos da tela do pedal.
   figures: {
     flexDirection: 'row',
     gap: 24,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: radii.card,
+    backgroundColor: palette.surface,
+    ...cardShadow,
   },
   figure: {
     gap: 2,
   },
   figureValue: {
+    fontFamily: fonts.display,
     fontSize: 17,
-    fontWeight: '700',
-    color: '#222',
+    color: palette.ink,
     fontVariant: ['tabular-nums'],
   },
   figureLabel: {
-    fontSize: 12,
-    color: '#666',
+    ...type.meta,
   },
   caption: {
-    fontSize: 13,
-    color: '#666',
+    ...type.meta,
   },
 });

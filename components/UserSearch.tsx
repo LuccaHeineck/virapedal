@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { colors } from '../constants/colors';
+import { colors, palette } from '../constants/colors';
+import { fonts } from '../constants/theme';
 import { supabase } from '../lib/supabase';
 import { Avatar } from './Avatar';
 
@@ -66,7 +67,7 @@ export function UserSearch({ onSelectUser }: UserSearchProps) {
   return (
     <View style={styles.container}>
       <View style={styles.searchField}>
-        <Ionicons name="search-outline" size={20} color="#777" />
+        <Ionicons name="search-outline" size={20} color={palette.inkInactive} />
         <TextInput
           style={styles.input}
           value={query}
@@ -81,7 +82,7 @@ export function UserSearch({ onSelectUser }: UserSearchProps) {
         />
         {query.length > 0 ? (
           <TouchableOpacity onPress={() => setQuery('')} accessibilityRole="button" accessibilityLabel="Limpar busca">
-            <Ionicons name="close-circle" size={20} color="#777" />
+            <Ionicons name="close-circle" size={20} color={palette.inkInactive} />
           </TouchableOpacity>
         ) : null}
       </View>
@@ -100,7 +101,7 @@ export function UserSearch({ onSelectUser }: UserSearchProps) {
           >
             <Avatar photo={item.profile_photo_url} name={item.name} size={44} />
             <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
-            <Ionicons name="chevron-forward" size={20} color="#888" />
+            <Ionicons name="chevron-forward" size={20} color={palette.inkInactive} />
           </TouchableOpacity>
         )}
         ListEmptyComponent={
@@ -121,12 +122,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     paddingHorizontal: 14,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.border,
-    borderRadius: 12,
-    backgroundColor: '#fff',
+    borderRadius: 10,
+    backgroundColor: palette.surface,
   },
-  input: { flex: 1, paddingVertical: 10, fontSize: 16 },
+  input: { flex: 1, paddingVertical: 10, fontFamily: fonts.body, fontSize: 14.5, color: palette.ink },
   list: { flex: 1 },
   resultRow: {
     minHeight: 64,
@@ -134,9 +135,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: palette.border,
   },
-  name: { flex: 1, fontSize: 16, fontWeight: '500' },
+  name: { flex: 1, fontFamily: fonts.bodySemi, fontSize: 14.5, color: palette.ink },
   empty: { paddingTop: 32, alignItems: 'center' },
-  emptyText: { color: '#888', fontSize: 15, textAlign: 'center' },
+  emptyText: { color: palette.inkInactive, fontFamily: fonts.body, fontSize: 13, textAlign: 'center' },
 });

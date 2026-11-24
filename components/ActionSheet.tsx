@@ -2,7 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { ComponentProps, ReactNode, useRef } from 'react';
 import { Modal, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '../constants/colors';
+import { colors, palette } from '../constants/colors';
+import { fonts } from '../constants/theme';
 
 export type ActionSheetOption = {
   key: string;
@@ -83,7 +84,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end',
     alignItems: 'center',
-    backgroundColor: 'rgba(17, 24, 39, 0.48)',
+    backgroundColor: 'rgba(36, 30, 26, 0.48)',
   },
   sheet: {
     width: '100%',
@@ -92,21 +93,21 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    backgroundColor: '#fff',
+    backgroundColor: palette.surface,
   },
   handle: {
     alignSelf: 'center',
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#d9dce1',
+    backgroundColor: palette.border,
     marginBottom: 8,
   },
   header: {
     paddingVertical: 10,
     paddingHorizontal: 4,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: palette.border,
     marginBottom: 4,
   },
   option: {
@@ -124,15 +125,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   optionIconDefault: {
-    backgroundColor: '#eaf1fe',
+    backgroundColor: palette.primaryTint,
   },
   optionIconDanger: {
-    backgroundColor: '#fdecea',
+    backgroundColor: palette.errorTint,
   },
   optionLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1a1a1a',
+    fontSize: 14.5,
+    fontFamily: fonts.display,
+    color: palette.ink,
   },
   optionLabelDanger: {
     color: colors.error,
@@ -140,15 +141,15 @@ const styles = StyleSheet.create({
   cancel: {
     marginTop: 8,
     minHeight: 46,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: palette.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cancelText: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#374151',
+    fontFamily: fonts.bodySemi,
+    color: palette.inkSecondary,
   },
 });

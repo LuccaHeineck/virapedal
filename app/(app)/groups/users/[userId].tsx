@@ -3,7 +3,8 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Avatar } from '../../../../components/Avatar';
-import { colors } from '../../../../constants/colors';
+import { colors, palette } from '../../../../constants/colors';
+import { fonts } from '../../../../constants/theme';
 import { supabase } from '../../../../lib/supabase';
 
 type PublicProfile = {
@@ -88,7 +89,7 @@ export default function UserProfile() {
           <Text style={styles.message}>{error}</Text>
         ) : locked ? (
           <>
-            <Ionicons name="lock-closed-outline" size={64} color="#666" />
+            <Ionicons name="lock-closed-outline" size={64} color={palette.inkSecondary} />
             <Text style={styles.message}>
               Você e esta pessoa precisam fazer parte do mesmo grupo para visualizar o perfil.
             </Text>
@@ -113,6 +114,6 @@ const styles = StyleSheet.create({
     padding: 24,
     backgroundColor: colors.background,
   },
-  name: { fontSize: 24, fontWeight: '600', textAlign: 'center' },
-  message: { fontSize: 16, color: '#666', textAlign: 'center' },
+  name: { fontFamily: fonts.displayHeavy, fontSize: 22, color: palette.ink, textAlign: 'center' },
+  message: { fontFamily: fonts.body, fontSize: 14, color: palette.inkSecondary, textAlign: 'center' },
 });

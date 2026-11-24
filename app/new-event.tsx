@@ -8,10 +8,11 @@ import { StatusText } from '../components/StatusText';
 import { DateField } from '../components/DateField';
 import { TextField } from '../components/TextField';
 import { TimeField } from '../components/TimeField';
-import { colors } from '../constants/colors';
+import { colors, palette } from '../constants/colors';
 import { useCreateEvent } from '../hooks/useCreateEvent';
 import { useGroups } from '../hooks/useGroups';
 import { DEFAULT_EVENT_NOTES } from '../lib/eventDefaults';
+import { fonts } from '../constants/theme';
 
 const DATE_SHAPE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_SHAPE = /^\d{2}:\d{2}$/;
@@ -206,7 +207,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.bodySemi,
   },
   groupList: {
     flexDirection: 'row',
@@ -226,11 +227,12 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
   groupOptionText: {
+    fontFamily: fonts.body,
     fontSize: 14,
-    color: '#444',
+    color: palette.inkSecondary,
   },
   groupOptionTextSelected: {
-    color: '#fff',
-    fontWeight: '600',
+    color: palette.surface,
+    fontFamily: fonts.bodySemi,
   },
 });

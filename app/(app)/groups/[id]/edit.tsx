@@ -7,10 +7,11 @@ import { GroupImage } from '../../../../components/GroupImage';
 import { LoadingView } from '../../../../components/LoadingView';
 import { StatusText } from '../../../../components/StatusText';
 import { TextField } from '../../../../components/TextField';
-import { colors } from '../../../../constants/colors';
+import { colors, palette } from '../../../../constants/colors';
 import { useGroup } from '../../../../hooks/useGroup';
 import { useGroupMutations } from '../../../../hooks/useGroupMutations';
 import { useImageUpload } from '../../../../hooks/useImageUpload';
+import { fonts } from '../../../../constants/theme';
 
 export default function EditGroup() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -142,7 +143,7 @@ export default function EditGroup() {
           onValueChange={setIsPrivate}
           disabled={busy}
           trackColor={{ false: colors.border, true: colors.primary }}
-          thumbColor="#fff"
+          thumbColor={palette.surface}
         />
       </View>
 
@@ -161,7 +162,7 @@ export default function EditGroup() {
             onValueChange={setDiscoverable}
             disabled={busy}
             trackColor={{ false: colors.border, true: colors.primary }}
-            thumbColor="#fff"
+            thumbColor={palette.surface}
           />
         </View>
       ) : null}
@@ -209,7 +210,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     gap: 8,
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: palette.border,
   },
   centered: {
     flex: 1,
@@ -240,11 +241,12 @@ const styles = StyleSheet.create({
   },
   privacyLabel: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.bodySemi,
   },
   privacyHint: {
+    fontFamily: fonts.body,
     fontSize: 13,
-    color: '#666',
+    color: palette.inkSecondary,
     maxWidth: 240,
   },
 });

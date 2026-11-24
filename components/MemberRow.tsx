@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { colors } from '../constants/colors';
+import { colors, palette } from '../constants/colors';
 import { GroupMemberRow } from '../hooks/useGroupMembers';
 import { Avatar } from './Avatar';
+import { fonts } from '../constants/theme';
 
 const MONTHS_SHORT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
@@ -66,7 +67,7 @@ export function MemberRow({ member, isViewer = false, onOpenProfile, onOpenMenu,
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel={`Ações para ${name}`}>
-          <Ionicons name="ellipsis-horizontal" size={20} color="#6b7280" />
+          <Ionicons name="ellipsis-horizontal" size={20} color={palette.inkSecondary} />
         </TouchableOpacity>
       ) : null}
     </View>
@@ -98,12 +99,12 @@ const styles = StyleSheet.create({
   name: {
     flexShrink: 1,
     fontSize: 15,
-    fontWeight: '600',
-    color: '#1a1a1a',
+    fontFamily: fonts.bodySemi,
+    color: palette.ink,
   },
   you: {
-    fontWeight: '400',
-    color: '#888',
+    fontFamily: fonts.body,
+    color: palette.inkInactive,
   },
   // Mesmo selo "Admin" do card da lista de grupos.
   adminBadge: {
@@ -113,16 +114,17 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 2,
-    backgroundColor: '#eaf1fe',
+    backgroundColor: palette.primaryTint,
   },
   adminBadgeText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: fonts.bodySemi,
     color: colors.primary,
   },
   meta: {
+    fontFamily: fonts.body,
     fontSize: 13,
-    color: '#666',
+    color: palette.inkSecondary,
   },
   menuButton: {
     width: 36,
@@ -130,6 +132,6 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f5f6f8',
+    backgroundColor: palette.segmentTrack,
   },
 });

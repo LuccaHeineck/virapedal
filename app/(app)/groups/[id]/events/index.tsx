@@ -4,9 +4,10 @@ import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native
 import { EventRow } from '../../../../../components/EventRow';
 import { LoadingView } from '../../../../../components/LoadingView';
 import { StatusText } from '../../../../../components/StatusText';
-import { colors } from '../../../../../constants/colors';
+import { colors, palette } from '../../../../../constants/colors';
 import { useGroup } from '../../../../../hooks/useGroup';
 import { useGroupEvents } from '../../../../../hooks/useGroupEvents';
+import { fonts } from '../../../../../constants/theme';
 
 export default function GroupEventsFeed() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -51,7 +52,7 @@ export default function GroupEventsFeed() {
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           renderItem={({ item }) => (
             <Link href={`/groups/${groupId}/events/${item.id}`} asChild>
-              <TouchableOpacity>
+              <TouchableOpacity activeOpacity={0.8}>
                 <EventRow
                   title={item.title}
                   status={item.status}
@@ -82,29 +83,29 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   newButtonContainer: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 22,
     paddingTop: 16,
-    paddingBottom: 8,
+    paddingBottom: 14,
   },
   newButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    paddingVertical: 10,
+    minHeight: 48,
+    borderRadius: 12,
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
   },
   newButtonText: {
-    color: '#fff',
+    fontFamily: fonts.display,
     fontSize: 15,
-    fontWeight: '600',
+    color: palette.onPrimary,
   },
   listContent: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 22,
     paddingBottom: 24,
     flexGrow: 1,
   },
   separator: {
-    height: 1,
-    backgroundColor: '#f0f0f0',
+    height: 10,
   },
   centered: {
     flex: 1,
@@ -113,8 +114,9 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   emptyText: {
-    color: '#888',
-    fontSize: 15,
+    color: palette.inkInactive,
+    fontFamily: fonts.body,
+    fontSize: 13,
     textAlign: 'center',
   },
 });

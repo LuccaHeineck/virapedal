@@ -1,4 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { palette } from '../constants/colors';
+import { fonts } from '../constants/theme';
 
 export function AuthDivider() {
   return (
@@ -18,11 +20,12 @@ const styles = StyleSheet.create({
   },
   line: {
     flex: 1,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: '#d0d0d0',
+    height: 1,
+    backgroundColor: palette.border,
   },
   text: {
-    color: '#666',
-    fontSize: 14,
+    color: palette.inkSecondary,
+    fontFamily: fonts.body,
+    fontSize: 12.5,
   },
 });

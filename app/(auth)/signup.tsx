@@ -1,8 +1,10 @@
-import { Link } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { AuthDivider } from '../../components/AuthDivider';
+import { AuthShell } from '../../components/AuthShell';
+import { Button } from '../../components/Button';
 import { GoogleSignInButton } from '../../components/GoogleSignInButton';
+import { StatusText } from '../../components/StatusText';
+import { TextField } from '../../components/TextField';
 import { getAuthErrorMessage, getOAuthRedirectErrorMessage } from '../../lib/authErrors';
 import { signInWithGoogle } from '../../lib/googleAuth';
 import { supabase } from '../../lib/supabase';
@@ -74,23 +76,21 @@ export default function Signup() {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Criar conta</Text>
-
+    <AuthShell mode="signup">
       <GoogleSignInButton busy={submitting} onPress={handleGoogleSignIn} />
       <AuthDivider />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Nome"
+      <TextField
+        label="Nome completo"
+        placeholder="Camila Duarte"
         value={name}
         onChangeText={setName}
         autoCapitalize="words"
         editable={!submitting}
       />
-      <TextInput
-        style={styles.input}
-        placeholder="E-mail"
+      <TextField
+        label="E-mail"
+        placeholder="voce@email.com"
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -98,73 +98,18 @@ export default function Signup() {
         keyboardType="email-address"
         editable={!submitting}
       />
-      <TextInput
-        style={styles.input}
-        placeholder="Senha"
+      <TextField
+        label="Senha"
+        placeholder="••••••••"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
         editable={!submitting}
       />
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <StatusText variant="error">{error}</StatusText> : null}
 
-      <TouchableOpacity
-        style={[styles.button, (!canSubmit || submitting) && styles.buttonDisabled]}
-        onPress={handleSignup}
-        disabled={!canSubmit || submitting}>
-        {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Cadastrar</Text>}
-      </TouchableOpacity>
-
-      <Link href="/login" style={styles.link}>
-        Já tem uma conta? Entrar
-      </Link>
-    </View>
+      <Button title="Criar conta" onPress={handleSignup} disabled={!canSubmit} loading={submitting} />
+    </AuthShell>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 24,
-    gap: 12,
-    backgroundColor: '#fff',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#d0d0d0',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-  },
-  error: {
-    color: '#c0392b',
-  },
-  button: {
-    backgroundColor: '#2f6feb',
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  link: {
-    marginTop: 16,
-    textAlign: 'center',
-    color: '#2f6feb',
-  },
-});
