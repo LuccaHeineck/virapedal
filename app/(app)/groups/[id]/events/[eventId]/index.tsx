@@ -6,6 +6,7 @@ import { Avatar } from '../../../../../../components/Avatar';
 import { Button } from '../../../../../../components/Button';
 import { ConfirmDialog } from '../../../../../../components/ConfirmDialog';
 import { Divider } from '../../../../../../components/Divider';
+import { EventBaseRoute } from '../../../../../../components/EventBaseRoute';
 import { LoadingView } from '../../../../../../components/LoadingView';
 import { StatusText } from '../../../../../../components/StatusText';
 import { Tag, TagTone } from '../../../../../../components/Tag';
@@ -14,6 +15,7 @@ import { colors, palette } from '../../../../../../constants/colors';
 import { useAuth } from '../../../../../../context/AuthContext';
 import { EventStatus } from '../../../../../../hooks/useGroupEvents';
 import { useEvent } from '../../../../../../hooks/useEvent';
+import { useEventBaseRoute } from '../../../../../../hooks/useEventBaseRoute';
 import { EventParticipant, useEventParticipants } from '../../../../../../hooks/useEventParticipants';
 import { useGroup } from '../../../../../../hooks/useGroup';
 import { fonts, SCREEN_GUTTER } from '../../../../../../constants/theme';
@@ -136,12 +138,16 @@ export default function EventDetail() {
     removingParticipantId,
     actionError,
   } = useEventParticipants(numericEventId);
+  const { route: baseRoute, refresh: refreshBaseRoute } = useEventBaseRoute(numericEventId);
 
+  // A rota base também é relida no foco: alguém pode ter acabado de
+  // finalizar a rota deste pedal na aba Rotas.
   useFocusEffect(
     useCallback(() => {
       refreshEvent();
       refreshParticipants();
-    }, [refreshEvent, refreshParticipants])
+      refreshBaseRoute();
+    }, [refreshEvent, refreshParticipants, refreshBaseRoute])
   );
 
   // O header padrão do Stack sempre volta para "index" (lista de grupos) --
@@ -318,6 +324,12 @@ export default function EventDetail() {
               </View>
             ) : null}
             <Text style={styles.meta}>Criado por {event.creator_name}</Text>
+
+            {/* Só aparece depois que alguém finaliza uma rota vinculada a este
+                pedal -- antes disso não há percurso realizado para mostrar.
+                A key remonta o mapa se a rota base mudar (ex.: o organizador
+                finalizou depois de outro participante). */}
+            {baseRoute ? <EventBaseRoute key={baseRoute.id} route={baseRoute} /> : null}
 
             <Button
               title={isParticipant || isCreator ? 'Sair' : 'Participar'}
