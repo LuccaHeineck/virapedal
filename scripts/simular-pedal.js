@@ -4,19 +4,15 @@
 // do Parque Ibirapuera, ~4 km), para testar a gravação de rotas e o mapa sem
 // sair de casa.
 //
-// Como usar (Chrome):
-//   1. Abra o app (http://localhost:8081) e recarregue a página (Ctrl+Shift+R).
+// Como usar (Chrome ou Firefox):
+//   1. Abra o app (http://localhost:8081).
 //   2. Abra o DevTools (F12) > aba Console, cole este arquivo inteiro e Enter.
-//   3. No app: Gravar > Iniciar rota. O trajeto começa a ser percorrido.
+//   3. No app: aba Rotas > + > Iniciar rota. O trajeto começa a ser percorrido.
 //   4. Quando o Console avisar que o pedal chegou ao fim, toque em Finalizar.
 //
 // Pausar/Retomar no app funciona: o trajeto continua de onde parou.
 // Para desligar o simulador: pararPedalSimulado() no Console, ou recarregue a
 // página (o GPS real volta).
-//
-// Cole o script logo depois de recarregar: o expo-location na web confere o
-// id de cada watch pelo próprio contador, e este simulador numera a partir de
-// 1 como o Chrome faz numa página recém-carregada.
 (() => {
   // --- Ajustes ---------------------------------------------------------------
   const SPEED_MS = 6; // velocidade simulada da bike, em m/s (~22 km/h)
@@ -151,7 +147,7 @@
   const seconds = Math.round((total * REAL_INTERVAL_MS) / 1000);
   console.log(
     `%c[pedal simulado] pronto: ${total} pontos, ~${totalKm.toFixed(1)} km, ~${seconds}s para percorrer. ` +
-      'Agora toque em Gravar > Iniciar rota.',
+      'Agora, no app: aba Rotas > + > Iniciar rota.',
     'color:#c33e00;font-weight:bold'
   );
 })();
