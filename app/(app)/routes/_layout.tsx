@@ -10,9 +10,19 @@ export const unstable_settings = {
 export default function RoutesLayout() {
   return (
     <Stack screenOptions={stackScreenOptions}>
-      {/* A lista desenha o próprio título, como no design. "Iniciar rota"
-          mora no "Gravar" da barra inferior. */}
-      <Stack.Screen name="index" options={{ title: 'Atividade', headerShown: false }} />
+      <Stack.Screen
+        name="index"
+        options={{
+          title: 'Rotas',
+          // "index" é sempre a raiz desta aba -- o initialRouteName acima às
+          // vezes sintetiza histórico residual que faz o header mostrar um
+          // botão de voltar aqui indevidamente (mesma limitação do
+          // groups/_layout no React Native Web). "Iniciar rota" mora no FAB
+          // da lista, não no header.
+          headerBackVisible: false,
+          headerLeft: () => null,
+        }}
+      />
       <Stack.Screen name="new" options={{ title: 'Iniciar rota', presentation: 'modal' }} />
       <Stack.Screen name="[id]" options={{ title: 'Rota' }} />
     </Stack>

@@ -1,14 +1,13 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { AuthDivider } from '../../components/AuthDivider';
-import { AuthShell } from '../../components/AuthShell';
-import { Button } from '../../components/Button';
 import { GoogleSignInButton } from '../../components/GoogleSignInButton';
-import { StatusText } from '../../components/StatusText';
-import { TextField } from '../../components/TextField';
 import { palette } from '../../constants/colors';
 import { fonts } from '../../constants/theme';
+
+// Mesmo tom de placeholder do TextField: ink a ~45%.
+const PLACEHOLDER = 'rgba(36,30,26,0.45)';
 import { getAuthErrorMessage, getOAuthRedirectErrorMessage } from '../../lib/authErrors';
 import { signInWithGoogle } from '../../lib/googleAuth';
 import { supabase } from '../../lib/supabase';
@@ -74,13 +73,16 @@ export default function Login() {
   }
 
   return (
-    <AuthShell mode="login">
+    <View style={styles.container}>
+      <Text style={styles.title}>Entrar</Text>
+
       <GoogleSignInButton busy={submitting} onPress={handleGoogleSignIn} />
       <AuthDivider />
 
-      <TextField
-        label="E-mail"
-        placeholder="voce@email.com"
+      <TextInput
+        placeholderTextColor={PLACEHOLDER}
+        style={styles.input}
+        placeholder="E-mail"
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -88,9 +90,10 @@ export default function Login() {
         keyboardType="email-address"
         editable={!submitting}
       />
-      <TextField
-        label="Senha"
-        placeholder="••••••••"
+      <TextInput
+        placeholderTextColor={PLACEHOLDER}
+        style={styles.input}
+        placeholder="Senha"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -101,17 +104,77 @@ export default function Login() {
         Esqueceu sua senha?
       </Link>
 
-      {error ? <StatusText variant="error">{error}</StatusText> : null}
+      {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <Button title="Entrar" onPress={handleLogin} disabled={!canSubmit} loading={submitting} />
-    </AuthShell>
+      <TouchableOpacity
+        style={[styles.button, (!canSubmit || submitting) && styles.buttonDisabled]}
+        onPress={handleLogin}
+        disabled={!canSubmit || submitting}>
+        {submitting ? <ActivityIndicator color={palette.onPrimary} /> : <Text style={styles.buttonText}>Entrar</Text>}
+      </TouchableOpacity>
+
+      <Link href="/signup" style={styles.link}>
+        Não tem uma conta? Cadastre-se
+      </Link>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 26,
+    paddingVertical: 44,
+    gap: 16,
+    backgroundColor: palette.bg,
+  },
+  title: {
+    fontFamily: fonts.displayHeavy,
+    fontSize: 21,
+    color: palette.ink,
+  },
+  input: {
+    minHeight: 46,
+    borderWidth: 1.5,
+    borderColor: palette.border,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    backgroundColor: palette.surface,
+    fontFamily: fonts.body,
+    fontSize: 14.5,
+    color: palette.ink,
+  },
+  error: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 13,
+    color: palette.error,
+  },
+  button: {
+    minHeight: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: palette.primary,
+    marginTop: 6,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+  buttonText: {
+    fontFamily: fonts.display,
+    fontSize: 15,
+    color: palette.onPrimary,
+  },
+  link: {
+    marginTop: 8,
+    textAlign: 'center',
+    fontFamily: fonts.bodyMedium,
+    fontSize: 13,
+    color: palette.primary,
+  },
   forgotLink: {
     alignSelf: 'flex-end',
-    marginTop: -6,
     fontFamily: fonts.bodyMedium,
     fontSize: 13,
     color: palette.primary,

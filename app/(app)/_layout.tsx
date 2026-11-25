@@ -1,18 +1,34 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { BottomNav } from '../../components/BottomNav';
 import { palette } from '../../constants/colors';
+import { fonts } from '../../constants/theme';
 import { triggerHomeRefresh } from '../../lib/homeRefreshEmitter';
 
-// Ícones, rótulos e a ordem de exibição das abas moram no BottomNav. Todas
-// as abas desenham o próprio título dentro da tela, como no design.
+// Mesmas abas, ordem e ícones de sempre, só com o visual do guia: fundo
+// surface, divisória creme, aba ativa em terracota e rótulo em Work Sans.
+const tabsScreenOptions = {
+  sceneStyle: { backgroundColor: palette.bg },
+  tabBarActiveTintColor: palette.primary,
+  tabBarInactiveTintColor: palette.inkInactive,
+  tabBarStyle: { backgroundColor: palette.surface, borderTopColor: palette.border },
+  tabBarLabelStyle: { fontFamily: fonts.bodySemi, fontSize: 10.5 },
+  // Só a aba "Início" usa o cabeçalho das Tabs; as outras têm pilha própria.
+  headerStyle: { backgroundColor: palette.bg },
+  headerShadowVisible: false,
+  headerTitleStyle: { fontFamily: fonts.display, fontSize: 16, color: palette.ink },
+};
+
 export default function AppLayout() {
   return (
-    <Tabs
-      tabBar={(props) => <BottomNav {...props} />}
-      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: palette.bg } }}>
+    <Tabs screenOptions={tabsScreenOptions}>
       <Tabs.Screen
         name="index"
-        options={{ title: 'Pedais' }}
+        options={{
+          title: 'Início',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'home' : 'home-outline'} color={color} size={size} />
+          ),
+        }}
         // useFocusEffect não dispara ao tocar numa aba já focada (sem
         // mudança de foco, sem novo evento) -- por isso o toque em "Início"
         // estando nela não recarregava nada. Avisa a tela via um pub-sub
@@ -29,7 +45,16 @@ export default function AppLayout() {
 
       <Tabs.Screen
         name="groups"
-        options={{ title: 'Grupos' }}
+        options={{
+          title: 'Grupos',
+          // A pilha aninhada em app/(app)/groups/_layout.tsx tem seu próprio
+          // cabeçalho por tela — sem isso, o cabeçalho das Tabs (deste nível)
+          // aparece empilhado em cima do dela.
+          headerShown: false,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'people' : 'people-outline'} color={color} size={size} />
+          ),
+        }}
         // Um link para um pedal ou "Novo pedal" aberto a partir de outra aba
         // empurra aquela tela para dentro da pilha desta aba (as rotas
         // moram em app/(app)/groups/...). navigation.navigate('groups',
@@ -58,7 +83,16 @@ export default function AppLayout() {
       />
       <Tabs.Screen
         name="routes"
-        options={{ title: 'Atividade' }}
+        options={{
+          title: 'Rotas',
+          // A pilha aninhada em app/(app)/routes/_layout.tsx tem seu próprio
+          // cabeçalho por tela -- sem isto, o cabeçalho das Tabs empilha em
+          // cima do dela.
+          headerShown: false,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'map' : 'map-outline'} color={color} size={size} />
+          ),
+        }}
         // Mesmo tratamento da aba "Grupos": um link para uma rota aberto a
         // partir de outra aba empurra aquela tela para dentro da pilha desta
         // aba. Resetar o estado da pilha aninhada diretamente troca para
@@ -85,7 +119,15 @@ export default function AppLayout() {
       />
       <Tabs.Screen
         name="profile"
-        options={{ title: 'Perfil' }}
+        options={{
+          title: 'Perfil',
+          // Pilha aninhada em app/(app)/profile/_layout.tsx tem seu próprio
+          // cabeçalho (com o botão de Configurações).
+          headerShown: false,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'person' : 'person-outline'} color={color} size={size} />
+          ),
+        }}
         // Mesmo tratamento das abas "Grupos" e "Rotas": tocar em "Perfil"
         // estando em Configurações volta para o perfil.
         listeners={({ navigation }) => ({

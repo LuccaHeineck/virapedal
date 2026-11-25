@@ -5,22 +5,18 @@ import { cardShadow, fonts, radii } from '../constants/theme';
 import { Group } from '../hooks/useGroups';
 import { GroupImage } from './GroupImage';
 import { PendingRequestsBadge } from './PendingRequestsBadge';
-import { CardPill } from './CardPill';
 import { Tag } from './Tag';
 
 type GroupCardProps = {
   group: Group;
-  // Mostra o selo "Admin".
+  // Mostra o selo "Admin" -- mesmo escudo do banner "Você administra este
+  // grupo" na tela do grupo.
   isAdmin?: boolean;
   // Solicitações de entrada aguardando aprovação (só chega > 0 para admins).
   pendingRequests?: number;
-  // "Meus grupos" ganha o "Abrir" teal; "Descobrir", o "Ver" terracota.
-  isMember?: boolean;
 };
 
-// O card inteiro abre o grupo; a pílula à direita só repete a ação para
-// deixar claro o que o toque faz.
-export function GroupCard({ group, isAdmin = false, pendingRequests = 0, isMember = true }: GroupCardProps) {
+export function GroupCard({ group, isAdmin = false, pendingRequests = 0 }: GroupCardProps) {
   const isPrivate = group.privacy === 'private';
   const memberLabel = `${group.members_count} ${group.members_count === 1 ? 'membro' : 'membros'}`;
 
@@ -33,9 +29,15 @@ export function GroupCard({ group, isAdmin = false, pendingRequests = 0, isMembe
           <Text style={styles.name} numberOfLines={1}>
             {group.name}
           </Text>
-          {isPrivate ? (
-            <Ionicons name="lock-closed-outline" size={12} color={palette.inkSecondary} accessibilityLabel="Privado" />
-          ) : null}
+
+          {/* Teal = "acesso livre"; neutro = "restrito" sem gritar, deixando o
+              terracota para elementos interativos. */}
+          <Tag
+            label={isPrivate ? 'Privado' : 'Público'}
+            tone={isPrivate ? 'neutral' : 'teal'}
+            icon={isPrivate ? 'lock-closed' : 'earth'}
+            size="compact"
+          />
         </View>
 
         {group.description ? (
@@ -49,13 +51,18 @@ export function GroupCard({ group, isAdmin = false, pendingRequests = 0, isMembe
         )}
 
         <View style={styles.metaRow}>
+          <Ionicons name="people-outline" size={14} color={palette.inkSecondary} />
           <Text style={styles.metaText}>{memberLabel}</Text>
-          {isAdmin ? <Tag label="Admin" tone="primary" size="compact" /> : null}
+
+          {isAdmin ? (
+            <Tag label="Admin" tone="primary" icon="shield-checkmark" size="compact" style={styles.adminTag} />
+          ) : null}
+
           <PendingRequestsBadge count={pendingRequests} />
         </View>
       </View>
 
-      <CardPill label={isMember ? 'Abrir' : 'Ver'} kind={isMember ? 'open' : 'join'} />
+      <Ionicons name="chevron-forward" size={20} color={palette.inkInactive} />
     </View>
   );
 }
@@ -63,7 +70,7 @@ export function GroupCard({ group, isAdmin = false, pendingRequests = 0, isMembe
 const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: 12,
     padding: 14,
     backgroundColor: palette.surface,
@@ -73,15 +80,15 @@ const styles = StyleSheet.create({
   info: {
     flex: 1,
     minWidth: 0,
+    gap: 4,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 4,
+    gap: 8,
   },
   name: {
-    flexShrink: 1,
+    flex: 1,
     fontFamily: fonts.display,
     fontSize: 15,
     color: palette.ink,
@@ -92,7 +99,6 @@ const styles = StyleSheet.create({
     lineHeight: 17.5,
     color: palette.ink,
     opacity: 0.72,
-    marginBottom: 7,
   },
   descriptionEmpty: {
     fontStyle: 'italic',
@@ -102,12 +108,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: 5,
+    marginTop: 2,
   },
   metaText: {
     fontFamily: fonts.body,
-    fontSize: 11,
-    color: palette.ink,
-    opacity: 0.55,
+    fontSize: 12,
+    color: palette.inkSecondary,
+  },
+  adminTag: {
+    marginLeft: 4,
   },
 });

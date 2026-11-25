@@ -1,16 +1,13 @@
-import { Link, useFocusEffect, useRouter } from 'expo-router';
+import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Avatar } from '../../../components/Avatar';
 import { EventRow } from '../../../components/EventRow';
-import { LoadingView } from '../../../components/LoadingView';
 import { RouteRow } from '../../../components/RouteRow';
-import { IconButton, ScreenHeader } from '../../../components/ScreenHeader';
-import { SegmentedControl } from '../../../components/SegmentedControl';
 import { StatusText } from '../../../components/StatusText';
+import { UnderlineTabs } from '../../../components/UnderlineTabs';
 import { colors, palette } from '../../../constants/colors';
-import { cardShadow, fonts, radii, SCREEN_GUTTER, type } from '../../../constants/theme';
-import { useAuth } from '../../../context/AuthContext';
+import { cardShadow, fonts, radii, SCREEN_GUTTER } from '../../../constants/theme';
 import { MyEventParticipation, useMyEventParticipations } from '../../../hooks/useMyEventParticipations';
 import { useProfile } from '../../../hooks/useProfile';
 import { RouteListItem, useRoutes } from '../../../hooks/useRoutes';
@@ -68,11 +65,9 @@ const TABS: { key: ProfileTab; label: string }[] = [
 // junto), então os itens são heterogêneos e o renderItem decide pelo kind.
 type ListItem =
   | { kind: 'event'; key: string; event: MyEventParticipation }
-  | { kind: 'route'; key: string; route: RouteListItem };
+  | { kind: 'route'; key: string; route: RouteListItem; isLast: boolean };
 
 export default function Profile() {
-  const router = useRouter();
-  const { user } = useAuth();
   const [tab, setTab] = useState<ProfileTab>('rides');
   const [refreshing, setRefreshing] = useState(false);
   const { profile, loading, error, refresh: refreshProfile } = useProfile();
@@ -101,32 +96,18 @@ export default function Profile() {
 
   const totals = useMemo(() => sumRides(routes), [routes]);
 
-  const header = (
-    <ScreenHeader
-      title="Perfil"
-      topPadding={32}
-      actions={
-        <IconButton icon="settings-outline" onPress={() => router.push('/profile/settings')} accessibilityLabel="Configurações do perfil" />
-      }
-    />
-  );
-
   if (loading && !profile) {
     return (
-      <View style={styles.container}>
-        {header}
-        <LoadingView />
+      <View style={styles.centered}>
+        <ActivityIndicator color={colors.primary} />
       </View>
     );
   }
 
   if (error || !profile) {
     return (
-      <View style={styles.container}>
-        {header}
-        <View style={styles.centered}>
-          <StatusText variant="error">{error ?? 'Não foi possível carregar seu perfil. Tente novamente.'}</StatusText>
-        </View>
+      <View style={styles.centered}>
+        <Text style={styles.error}>{error ?? 'Não foi possível carregar seu perfil. Tente novamente.'}</Text>
       </View>
     );
   }
@@ -134,7 +115,12 @@ export default function Profile() {
   const items: ListItem[] =
     tab === 'group'
       ? myEvents.map((event) => ({ kind: 'event', key: `e${event.id}`, event }))
-      : routes.map((route) => ({ kind: 'route', key: `r${route.id}`, route }));
+      : routes.map((route, index) => ({
+          kind: 'route',
+          key: `r${route.id}`,
+          route,
+          isLast: index === routes.length - 1,
+        }));
 
   const listError = tab === 'group' ? myEventsError : routesError;
   const listLoading = tab === 'group' ? myEventsLoading : routesLoading;
@@ -159,7 +145,8 @@ export default function Profile() {
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} colors={[colors.primary]} />
       }
-      ItemSeparatorComponent={() => <View style={styles.separator} />}
+      // RouteRow já desenha a própria divisória.
+      ItemSeparatorComponent={tab === 'group' ? () => <View style={styles.separator} /> : undefined}
       renderItem={({ item }) =>
         item.kind === 'event' ? (
           <Link href={`/groups/${item.event.group_id}/events/${item.event.id}?from=profile`} asChild>
@@ -178,45 +165,41 @@ export default function Profile() {
         ) : (
           <Link href={`/routes/${item.route.id}?from=profile`} asChild>
             <TouchableOpacity style={styles.row} activeOpacity={0.8}>
-              <RouteRow route={item.route} />
+              <RouteRow route={item.route} isLast={item.isLast} />
             </TouchableOpacity>
           </Link>
         )
       }
       ListHeaderComponent={
-        <>
-          {header}
-          <View style={styles.header}>
-            <View style={styles.identity}>
-              <Avatar photo={profile.profile_photo_url} name={profile.name} size={88} />
-              <Text style={styles.name} numberOfLines={2}>
-                {profile.name}
-              </Text>
-              {user?.email ? <Text style={styles.email}>{user.email}</Text> : null}
-            </View>
-
-            <View style={styles.stats}>
-              {stats.map((stat, index) => (
-                <View key={stat.key} style={[styles.stat, index > 0 && styles.statDivided]}>
-                  <Text style={styles.statValue}>
-                    {stat.value}
-                    {stat.unit ? <Text style={styles.statUnit}> {stat.unit}</Text> : null}
-                  </Text>
-                  <Text style={styles.statLabel}>{stat.label}</Text>
-                </View>
-              ))}
-            </View>
-
-            <SegmentedControl options={TABS} active={tab} onChange={setTab} />
-
-            {listError ? <StatusText variant="error">{listError}</StatusText> : null}
+        <View style={styles.header}>
+          <View style={styles.identity}>
+            <Avatar photo={profile.profile_photo_url} name={profile.name} size={80} />
+            <Text style={styles.name} numberOfLines={2}>
+              {profile.name}
+            </Text>
           </View>
-        </>
+
+          <View style={styles.stats}>
+            {stats.map((stat, index) => (
+              <View key={stat.key} style={[styles.stat, index > 0 && styles.statDivided]}>
+                <Text style={styles.statValue}>
+                  {stat.value}
+                  {stat.unit ? <Text style={styles.statUnit}> {stat.unit}</Text> : null}
+                </Text>
+                <Text style={styles.statLabel}>{stat.label}</Text>
+              </View>
+            ))}
+          </View>
+
+          <UnderlineTabs tabs={TABS} active={tab} onChange={setTab} style={styles.tabs} />
+
+          {listError ? <StatusText variant="error">{listError}</StatusText> : null}
+        </View>
       }
       ListEmptyComponent={
         listLoading ? null : (
           <View style={styles.centered}>
-            <Text style={type.empty}>{emptyText}</Text>
+            <Text style={styles.emptyText}>{emptyText}</Text>
           </View>
         )
       }
@@ -235,30 +218,28 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: SCREEN_GUTTER,
-    paddingBottom: 16,
-    gap: 20,
+    paddingTop: 24,
+    paddingBottom: 12,
+    gap: 12,
+    alignItems: 'stretch',
   },
+  // Foto à esquerda e nome à direita, como nos perfis de redes sociais.
   identity: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 16,
   },
   name: {
-    marginTop: 6,
-    fontFamily: fonts.display,
-    fontSize: 17,
+    flex: 1,
+    fontFamily: fonts.displayHeavy,
+    fontSize: 21,
     color: palette.ink,
-    textAlign: 'center',
   },
-  email: {
-    fontFamily: fonts.body,
-    fontSize: 13,
-    color: palette.ink,
-    opacity: 0.6,
-  },
-  // Faixa de números: valor em destaque, rótulo pequeno embaixo, colunas
-  // iguais separadas por filetes, num card como os demais.
+  // Faixa de números estilo rede social: valor em destaque, rótulo pequeno
+  // embaixo, colunas iguais separadas por filetes, num card como os demais.
   stats: {
     flexDirection: 'row',
+    marginTop: 8,
     paddingVertical: 14,
     borderRadius: radii.card,
     backgroundColor: palette.surface,
@@ -287,17 +268,31 @@ const styles = StyleSheet.create({
   statLabel: {
     fontFamily: fonts.body,
     fontSize: 11.5,
-    color: palette.ink,
-    opacity: 0.6,
+    color: palette.inkInactive,
   },
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.background,
     padding: 24,
   },
+  error: {
+    fontFamily: fonts.body,
+    color: colors.error,
+  },
+  tabs: {
+    marginTop: 16,
+  },
+  // Os itens agora são cards: o separador é só o respiro entre eles.
   separator: {
     height: 10,
+  },
+  emptyText: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    color: palette.inkInactive,
+    textAlign: 'center',
   },
   row: {
     paddingHorizontal: SCREEN_GUTTER,

@@ -67,7 +67,7 @@ export default function NewEvent() {
             hitSlop={8}
             accessibilityLabel="Voltar"
             accessibilityRole="button">
-            <Ionicons name="chevron-back" size={26} color={colors.primary} />
+            <Ionicons name="chevron-back" size={26} color={palette.inkSecondary} />
           </TouchableOpacity>
         ),
       }}

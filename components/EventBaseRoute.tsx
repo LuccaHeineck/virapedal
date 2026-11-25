@@ -51,8 +51,11 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 8,
   },
+  // Mesmo título de seção da tela do pedal ("Participantes").
   title: {
-    ...type.sectionLabel,
+    fontFamily: fonts.display,
+    fontSize: 16,
+    color: palette.ink,
   },
   // Números no mesmo card claro dos outros blocos da tela do pedal.
   figures: {

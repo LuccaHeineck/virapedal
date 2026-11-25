@@ -7,6 +7,9 @@ import { supabase } from '../../lib/supabase';
 import { palette } from '../../constants/colors';
 import { fonts } from '../../constants/theme';
 
+// Mesmo tom de placeholder do TextField: ink a ~45%.
+const PLACEHOLDER = 'rgba(36,30,26,0.45)';
+
 const MIN_PASSWORD_LENGTH = 6;
 
 // Recuperação de senha por código (OTP) enviado por e-mail, em vez de link:
@@ -139,6 +142,7 @@ export default function ForgotPassword() {
         <>
           <Text style={styles.description}>Informe o e-mail da sua conta e enviaremos um código para criar uma nova senha.</Text>
           <TextInput
+            placeholderTextColor={PLACEHOLDER}
             style={styles.input}
             placeholder="E-mail"
             value={email}
@@ -162,6 +166,7 @@ export default function ForgotPassword() {
         <>
           {info ? <Text style={styles.description}>{info}</Text> : null}
           <TextInput
+            placeholderTextColor={PLACEHOLDER}
             style={styles.input}
             placeholder="Código"
             value={code}
@@ -173,6 +178,7 @@ export default function ForgotPassword() {
             editable={!submitting && !recoveringRef.current}
           />
           <TextInput
+            placeholderTextColor={PLACEHOLDER}
             style={styles.input}
             placeholder="Nova senha"
             value={password}
@@ -181,6 +187,7 @@ export default function ForgotPassword() {
             editable={!submitting}
           />
           <TextInput
+            placeholderTextColor={PLACEHOLDER}
             style={styles.input}
             placeholder="Confirmar nova senha"
             value={confirmPassword}

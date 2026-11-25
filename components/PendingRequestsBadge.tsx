@@ -15,7 +15,7 @@ export function PendingRequestsBadge({ count }: PendingRequestsBadgeProps) {
 
   return (
     <View accessibilityLabel={`${count} ${count === 1 ? 'solicitação pendente' : 'solicitações pendentes'}`}>
-      <Tag label={String(count)} tone="amber" icon="person-add-outline" size="compact" />
+      <Tag label={String(count)} tone="amber" icon="person-add" size="compact" />
     </View>
   );
 }

@@ -6,27 +6,30 @@ import { Avatar } from '../../../../components/Avatar';
 import { AvatarStack } from '../../../../components/AvatarStack';
 import { Button } from '../../../../components/Button';
 import { ConfirmDialog } from '../../../../components/ConfirmDialog';
-import { Divider } from '../../../../components/Divider';
 import { GroupImage } from '../../../../components/GroupImage';
 import { LoadingView } from '../../../../components/LoadingView';
 import { NavRow } from '../../../../components/NavRow';
 import { PendingRequestsBadge } from '../../../../components/PendingRequestsBadge';
 import { StatusText } from '../../../../components/StatusText';
-import { Tag } from '../../../../components/Tag';
 import { colors, palette } from '../../../../constants/colors';
+import { cardShadow, fonts, radii, SCREEN_GUTTER } from '../../../../constants/theme';
 import { useGroup } from '../../../../hooks/useGroup';
 import { GroupMemberRow, useGroupMembers } from '../../../../hooks/useGroupMembers';
 import { useGroupMutations } from '../../../../hooks/useGroupMutations';
 import { useJoin } from '../../../../hooks/useJoin';
 import { useJoinRequests } from '../../../../hooks/useJoinRequests';
-import { cardShadow, fonts, radii, SCREEN_GUTTER } from '../../../../constants/theme';
+
+// Pares fundo/frente dos selos de privacidade — mesmos tons do GroupCard, para
+// que "público" e "privado" tenham a mesma leitura em toda a navegação.
+const PUBLIC_FG = palette.teal;
+const PRIVATE_FG = palette.neutralTag;
 
 // Fundo do botão de rostos no cabeçalho; também é a cor do anel das fotos,
 // para que ele separe as sobrepostas sem desenhar contorno.
 const FACES_BG = palette.segmentTrack;
 
 // A faixa de "solicitação pendente" é um estado de espera, não de privacidade —
-// mantém o âmbar quente mesmo com o selo "Privado" agora neutro.
+// mantém o âmbar quente mesmo com o selo "Privado" neutro.
 const PENDING_FG = palette.amber;
 
 const MONTHS = [
@@ -158,6 +161,7 @@ export default function GroupDetail() {
     await leaveGroup();
     setLeaveDialogOpen(false);
   }
+  const privacyFg = isPrivate ? PRIVATE_FG : PUBLIC_FG;
   const memberLabel = `${group.members_count} ${group.members_count === 1 ? 'membro' : 'membros'}`;
   const showFaces = !!membership && members.length > 0;
 
@@ -194,33 +198,27 @@ export default function GroupDetail() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Stack.Screen options={{ title: group.name }} />
 
-      {/* Capa de largura total no topo, como no design. */}
-      <View style={styles.cover}>
-        <GroupImage key={group.updated_at} path={group.image_url} name={group.name} cover radius={0} />
-      </View>
-
-      <View style={styles.body}>
       <View style={styles.hero}>
-        <View style={styles.titleRow}>
-          <Text style={styles.name}>{group.name}</Text>
-          {isPrivate ? (
-            <Tag label="Privado" tone="neutral" icon="lock-closed-outline" />
-          ) : (
-            <Tag label="Público" tone="teal" />
+        <GroupImage key={group.updated_at} path={group.image_url} name={group.name} size={96} />
+
+        <Text style={styles.name}>{group.name}</Text>
+
+        <View style={styles.chips}>
+          <View style={[styles.chip, isPrivate ? styles.chipPrivate : styles.chipPublic]}>
+            <Ionicons name={isPrivate ? 'lock-closed' : 'earth'} size={12} color={privacyFg} />
+            <Text style={[styles.chipText, { color: privacyFg }]}>{isPrivate ? 'Privado' : 'Público'}</Text>
+          </View>
+
+          {/* Quem é membro vê a linha de rostos logo abaixo, que já diz
+              quantos são; quem não é (a lista de membros é restrita pelo RLS)
+              fica só com a contagem aqui. */}
+          {showFaces ? null : (
+            <View style={styles.memberMeta}>
+              <Ionicons name="people" size={13} color={palette.inkSecondary} />
+              <Text style={styles.memberMetaText}>{memberLabel}</Text>
+            </View>
           )}
         </View>
-
-        {group.description ? <Text style={styles.description}>{group.description}</Text> : null}
-
-        {/* Quem é membro vê a linha de rostos logo abaixo, que já diz
-            quantos são; quem não é (a lista de membros é restrita pelo RLS)
-            fica só com a contagem aqui. */}
-        {showFaces ? null : (
-          <View style={styles.memberMeta}>
-            <Ionicons name="person-outline" size={14} color={palette.inkSecondary} />
-            <Text style={styles.memberMetaText}>{memberLabel}</Text>
-          </View>
-        )}
 
         {/* Linha de rostos, no padrão "Seguido por Ana, Bruno e mais 6" das
             redes sociais: algumas fotos sobrepostas e os nomes de quem está
@@ -247,20 +245,25 @@ export default function GroupDetail() {
           </Link>
         ) : null}
 
+        {group.description ? <Text style={styles.description}>{group.description}</Text> : null}
+
         <Text style={styles.createdAt}>{formatCreatedAt(group.created_at)}</Text>
       </View>
 
       {membership ? (
         <View style={[styles.banner, styles.bannerInfo]}>
-          <Ionicons name={isAdmin ? 'shield-checkmark-outline' : 'checkmark'} size={15} color={palette.teal} />
+          <Ionicons name={isAdmin ? 'shield-checkmark' : 'checkmark-circle'} size={18} color={palette.teal} />
           <Text style={[styles.bannerText, { color: palette.teal }]}>
             {isAdmin ? 'Você administra este grupo' : 'Você participa deste grupo'}
           </Text>
         </View>
       ) : pendingRequest ? (
         <View style={[styles.banner, styles.bannerWarning]}>
-          <Text style={[styles.bannerText, { color: PENDING_FG }]}>Solicitação pendente de aprovação</Text>
-          <Text style={styles.bannerHint}>Um admin precisa aprovar sua entrada.</Text>
+          <Ionicons name="time-outline" size={18} color={PENDING_FG} />
+          <View style={styles.bannerBody}>
+            <Text style={[styles.bannerText, { color: PENDING_FG }]}>Solicitação enviada</Text>
+            <Text style={styles.bannerHint}>Um admin precisa aprovar sua entrada.</Text>
+          </View>
         </View>
       ) : isPrivate ? (
         <Button title="Solicitar entrada" onPress={handleRequest} loading={submitting} />
@@ -269,8 +272,6 @@ export default function GroupDetail() {
       )}
 
       {joinError ? <StatusText variant="error">{joinError}</StatusText> : null}
-
-      <Divider />
 
       <View style={styles.card}>
         <Link href={`/groups/${group.id}/events`} asChild>
@@ -408,7 +409,6 @@ export default function GroupDetail() {
           </View>
         ) : null}
       </ConfirmDialog>
-      </View>
     </ScrollView>
   );
 }
@@ -419,15 +419,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
-    paddingBottom: 28,
-  },
-  cover: {
-    width: '100%',
-    height: 170,
-  },
-  body: {
-    paddingTop: 14,
     paddingHorizontal: SCREEN_GUTTER,
+    paddingVertical: 24,
     gap: 16,
   },
   centered: {
@@ -438,20 +431,39 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   hero: {
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: 10,
   },
-  titleRow: {
+  name: {
+    fontFamily: fonts.displayHeavy,
+    fontSize: 22,
+    color: palette.ink,
+    textAlign: 'center',
+  },
+  chips: {
     flexDirection: 'row',
-    alignItems: 'center',
     flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
   },
-  name: {
-    flexShrink: 1,
-    fontFamily: fonts.displayHeavy,
-    fontSize: 21,
-    color: palette.ink,
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  chipPublic: {
+    backgroundColor: palette.tealTint,
+  },
+  chipPrivate: {
+    backgroundColor: palette.neutralTagTint,
+  },
+  chipText: {
+    fontFamily: fonts.bodySemi,
+    fontSize: 11.5,
   },
   memberMeta: {
     flexDirection: 'row',
@@ -459,10 +471,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   memberMetaText: {
-    fontFamily: fonts.body,
+    fontFamily: fonts.bodyMedium,
     fontSize: 13,
-    color: palette.ink,
-    opacity: 0.65,
+    color: palette.inkSecondary,
   },
   // A margem da esquerda é igual à de cima/baixo: assim a primeira foto fica
   // concêntrica com a ponta arredondada do botão, em vez de colada nela.
@@ -489,36 +500,35 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     color: palette.ink,
     opacity: 0.78,
+    textAlign: 'center',
   },
   createdAt: {
     fontFamily: fonts.body,
     fontSize: 11.5,
-    color: palette.ink,
-    opacity: 0.55,
+    color: palette.inkInactive,
   },
   banner: {
-    borderRadius: 12,
-    padding: 12,
-  },
-  // Banner de sucesso do design: teal sobre teal-tint.
-  bannerInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    gap: 10,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  bannerBody: {
+    flex: 1,
+    gap: 1,
+  },
+  // Banner de sucesso do guia: teal sobre teal-tint.
+  bannerInfo: {
     backgroundColor: palette.tealTint,
   },
-  // Banner pendente: âmbar, centralizado.
   bannerWarning: {
-    alignItems: 'center',
-    gap: 2,
     backgroundColor: palette.amberTint,
   },
   bannerText: {
     fontFamily: fonts.bodySemi,
-    fontSize: 13,
+    fontSize: 13.5,
     color: palette.ink,
   },
   bannerHint: {

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { colors, palette } from '../constants/colors';
 import { fonts } from '../constants/theme';
 import { supabase } from '../lib/supabase';
@@ -127,7 +127,15 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: palette.surface,
   },
-  input: { flex: 1, paddingVertical: 10, fontFamily: fonts.body, fontSize: 14.5, color: palette.ink },
+  // No web, sem isto o <input> ganha o contorno de foco do navegador.
+  input: {
+    flex: 1,
+    paddingVertical: 10,
+    fontFamily: fonts.body,
+    fontSize: 14.5,
+    color: palette.ink,
+    ...Platform.select({ web: { outlineStyle: 'none' } as object, default: {} }),
+  },
   list: { flex: 1 },
   resultRow: {
     minHeight: 64,

@@ -5,31 +5,30 @@ import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View }
 import { Avatar } from '../../../../../../components/Avatar';
 import { Button } from '../../../../../../components/Button';
 import { ConfirmDialog } from '../../../../../../components/ConfirmDialog';
-import { Divider } from '../../../../../../components/Divider';
 import { EventBaseRoute } from '../../../../../../components/EventBaseRoute';
 import { LoadingView } from '../../../../../../components/LoadingView';
 import { StatusText } from '../../../../../../components/StatusText';
 import { Tag, TagTone } from '../../../../../../components/Tag';
 import { TextField } from '../../../../../../components/TextField';
 import { colors, palette } from '../../../../../../constants/colors';
+import { fonts, SCREEN_GUTTER } from '../../../../../../constants/theme';
 import { useAuth } from '../../../../../../context/AuthContext';
 import { EventStatus } from '../../../../../../hooks/useGroupEvents';
 import { useEvent } from '../../../../../../hooks/useEvent';
 import { useEventBaseRoute } from '../../../../../../hooks/useEventBaseRoute';
 import { EventParticipant, useEventParticipants } from '../../../../../../hooks/useEventParticipants';
 import { useGroup } from '../../../../../../hooks/useGroup';
-import { fonts, SCREEN_GUTTER } from '../../../../../../constants/theme';
-
-const STATUS_TONES: Record<EventStatus, TagTone> = {
-  scheduled: 'teal',
-  completed: 'neutral',
-  cancelled: 'error',
-};
 
 const STATUS_LABELS: Record<EventStatus, string> = {
   scheduled: 'Agendado',
   cancelled: 'Cancelado',
   completed: 'Concluído',
+};
+
+const STATUS_TONES: Record<EventStatus, TagTone> = {
+  scheduled: 'teal',
+  completed: 'neutral',
+  cancelled: 'error',
 };
 
 function formatDate(dateStr: string) {
@@ -74,7 +73,7 @@ function ParticipantRow({ participant, canRemove = false, onRemove, onOpenProfil
             <Ionicons name="lock-closed-outline" size={20} color={palette.surface} />
           </View>
         ) : (
-          <Avatar photo={photoUrl} name={name} size={30} />
+          <Avatar photo={photoUrl} name={name} size={40} />
         )}
         <Text style={styles.participantName} numberOfLines={1}>
           {name}
@@ -179,7 +178,7 @@ export default function EventDetail() {
       options={{
         headerLeft: () => (
           <TouchableOpacity onPress={handleBack} hitSlop={8} accessibilityLabel="Voltar" accessibilityRole="button">
-            <Ionicons name="chevron-back" size={26} color={colors.primary} />
+            <Ionicons name="chevron-back" size={26} color={palette.inkSecondary} />
           </TouchableOpacity>
         ),
       }}
@@ -289,18 +288,20 @@ export default function EventDetail() {
           <View style={styles.header}>
             <View style={styles.titleRow}>
               <Text style={styles.title}>{event.title}</Text>
-              <Tag label={STATUS_LABELS[event.status]} tone={STATUS_TONES[event.status]} />
+              {event.status !== 'scheduled' ? (
+                <Tag label={STATUS_LABELS[event.status]} tone={STATUS_TONES[event.status]} />
+              ) : null}
             </View>
 
             <View style={styles.metaRow}>
-              <Ionicons name="calendar-outline" size={14} color={palette.inkSecondary} style={styles.metaIcon} />
+              <Ionicons name="time-outline" size={14} color={palette.inkSecondary} />
               <Text style={styles.meta}>
                 {formatDate(event.event_date)} às {formatTime(event.start_time)} · {event.group_name}
               </Text>
             </View>
             {event.meeting_point ? (
               <View style={styles.metaRow}>
-                <Ionicons name="location-outline" size={14} color={palette.inkSecondary} style={styles.metaIcon} />
+                <Ionicons name="location-outline" size={14} color={palette.inkSecondary} />
                 <Text style={styles.meta}>{event.meeting_point}</Text>
               </View>
             ) : null}
@@ -380,8 +381,6 @@ export default function EventDetail() {
               </View>
             ) : null}
 
-            <Divider style={styles.divider} />
-
             <Text style={styles.sectionTitle}>Participantes ({registeredParticipants.length})</Text>
 
             {participantsError ? <StatusText variant="error">{participantsError}</StatusText> : null}
@@ -440,8 +439,8 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   header: {
-    gap: 10,
-    marginBottom: 8,
+    gap: 8,
+    marginBottom: 12,
   },
   guestSection: {
     flexDirection: 'row',
@@ -469,30 +468,16 @@ const styles = StyleSheet.create({
     fontSize: 21,
     color: palette.ink,
   },
-  statusBadge: {
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    backgroundColor: colors.placeholder,
-  },
-  statusText: {
-    fontFamily: fonts.body,
-    fontSize: 12,
-    color: palette.inkSecondary,
-  },
   meta: {
     flexShrink: 1,
     fontFamily: fonts.body,
     fontSize: 14,
-    color: palette.ink,
+    color: palette.inkSecondary,
   },
   metaRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 9,
-  },
-  metaIcon: {
-    marginTop: 3,
+    alignItems: 'center',
+    gap: 5,
   },
   routeRow: {
     flexDirection: 'row',
@@ -507,10 +492,9 @@ const styles = StyleSheet.create({
   routeText: {
     flex: 1,
     fontFamily: fonts.body,
-    fontSize: 13.5,
-    lineHeight: 20,
+    fontSize: 14.5,
+    lineHeight: 21,
     color: palette.ink,
-    opacity: 0.75,
   },
   notesBox: {
     gap: 6,
@@ -539,23 +523,21 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: fonts.display,
-    fontSize: 13,
+    fontSize: 16,
     color: palette.ink,
-    opacity: 0.7,
-    marginTop: 4,
-    marginBottom: 4,
+    marginTop: 16,
+    marginBottom: 8,
   },
   emptyText: {
     fontFamily: fonts.body,
-    fontSize: 12.5,
-    color: palette.ink,
-    opacity: 0.55,
+    fontSize: 13,
+    color: palette.inkInactive,
   },
   participantRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingVertical: 7,
+    gap: 12,
+    paddingVertical: 10,
   },
   participantIdentity: {
     flex: 1,
@@ -574,7 +556,7 @@ const styles = StyleSheet.create({
   participantName: {
     flexShrink: 1,
     fontFamily: fonts.body,
-    fontSize: 13.5,
+    fontSize: 14.5,
     color: palette.ink,
   },
   removeParticipantButton: {
@@ -585,22 +567,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: palette.errorTint,
   },
-  divider: {
-    marginTop: 12,
-    marginBottom: 6,
-  },
   guestListContainer: {
     marginTop: 8,
   },
   guestBadge: {
-    backgroundColor: palette.border,
+    backgroundColor: palette.neutralTagTint,
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
   guestBadgeText: {
     fontSize: 11,
-    color: palette.inkSecondary,
+    color: palette.neutralTag,
     fontFamily: fonts.bodyMedium,
   },
 });

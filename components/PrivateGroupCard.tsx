@@ -1,15 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors, palette } from '../constants/colors';
 import { cardShadow, fonts, radii } from '../constants/theme';
 import { PrivateGroupPreview } from '../hooks/useGroups';
 import { useJoin } from '../hooks/useJoin';
-import { CardPill } from './CardPill';
+import { Tag } from './Tag';
 
 type PrivateGroupCardProps = {
   group: PrivateGroupPreview;
   // Chamado depois de a solicitação ser criada, para a lista recarregar e o
-  // card passar a mostrar "Solicitado".
+  // card passar a mostrar "Solicitação enviada".
   onRequested: () => void;
 };
 
@@ -37,7 +37,7 @@ export function PrivateGroupCard({ group, onRequested }: PrivateGroupCardProps) 
     <View style={styles.card}>
       <View style={styles.row}>
         <View style={styles.lockThumb}>
-          <Ionicons name="lock-closed-outline" size={22} color={palette.inkSecondary} />
+          <Ionicons name="lock-closed" size={22} color={palette.inkSecondary} />
         </View>
 
         <View style={styles.info}>
@@ -45,24 +45,39 @@ export function PrivateGroupCard({ group, onRequested }: PrivateGroupCardProps) 
             <Text style={styles.name} numberOfLines={1}>
               {group.name}
             </Text>
-            <Ionicons name="lock-closed-outline" size={12} color={palette.inkSecondary} accessibilityLabel="Privado" />
+            <Tag label="Privado" tone="neutral" icon="lock-closed" size="compact" />
           </View>
 
-          <Text style={styles.description}>Grupo privado. Um admin aprova quem entra.</Text>
-
           {admins ? (
-            <Text style={styles.metaText} numberOfLines={1}>
-              Admin: {admins}
-            </Text>
+            <View style={styles.metaRow}>
+              <Ionicons name="shield-checkmark-outline" size={14} color={palette.inkSecondary} />
+              <Text style={styles.metaText} numberOfLines={1}>
+                Admin: {admins}
+              </Text>
+            </View>
           ) : null}
         </View>
-
-        {group.has_pending_request ? (
-          <CardPill label="Solicitado" kind="pending" />
-        ) : (
-          <CardPill label="Solicitar" kind="request" onPress={handleRequest} loading={submitting} />
-        )}
       </View>
+
+      {group.has_pending_request ? (
+        <View style={styles.pending}>
+          <Ionicons name="time-outline" size={16} color={palette.amber} />
+          <Text style={styles.pendingText}>Solicitação enviada</Text>
+        </View>
+      ) : (
+        <TouchableOpacity
+          style={[styles.requestButton, submitting && styles.requestButtonDisabled]}
+          onPress={handleRequest}
+          disabled={submitting}
+          activeOpacity={0.8}
+          accessibilityRole="button">
+          {submitting ? (
+            <ActivityIndicator size="small" color={palette.onPrimary} />
+          ) : (
+            <Text style={styles.requestButtonText}>Solicitar entrada</Text>
+          )}
+        </TouchableOpacity>
+      )}
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
@@ -71,7 +86,7 @@ export function PrivateGroupCard({ group, onRequested }: PrivateGroupCardProps) 
 
 const styles = StyleSheet.create({
   card: {
-    gap: 10,
+    gap: 12,
     padding: 14,
     backgroundColor: palette.surface,
     borderRadius: radii.card,
@@ -79,9 +94,10 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: 12,
   },
+  // Quadrado como as thumbs de grupo (GroupImage).
   lockThumb: {
     width: 56,
     height: 56,
@@ -93,32 +109,58 @@ const styles = StyleSheet.create({
   info: {
     flex: 1,
     minWidth: 0,
+    gap: 4,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 4,
+    gap: 8,
   },
   name: {
-    flexShrink: 1,
+    flex: 1,
     fontFamily: fonts.display,
     fontSize: 15,
     color: palette.ink,
   },
-  description: {
-    fontFamily: fonts.body,
-    fontSize: 12.5,
-    lineHeight: 17.5,
-    color: palette.ink,
-    opacity: 0.72,
-    marginBottom: 7,
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
   },
   metaText: {
+    flexShrink: 1,
     fontFamily: fonts.body,
-    fontSize: 11,
-    color: palette.ink,
-    opacity: 0.55,
+    fontSize: 12,
+    color: palette.inkSecondary,
+  },
+  requestButton: {
+    minHeight: 42,
+    borderRadius: radii.button,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: palette.primary,
+  },
+  requestButtonDisabled: {
+    opacity: 0.5,
+  },
+  requestButtonText: {
+    fontFamily: fonts.display,
+    fontSize: 14,
+    color: palette.onPrimary,
+  },
+  pending: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    minHeight: 42,
+    borderRadius: radii.button,
+    backgroundColor: palette.amberTint,
+  },
+  pendingText: {
+    fontFamily: fonts.display,
+    fontSize: 14,
+    color: palette.amber,
   },
   error: {
     fontFamily: fonts.body,

@@ -11,24 +11,26 @@ import {
   RouteListItem,
   routeTimestamp,
 } from '../hooks/useRoutes';
-import { PHOTO_STACK_SIZE, PhotoStack } from './PhotoStack';
-import { Squiggle } from './Squiggle';
+import { PhotoStack } from './PhotoStack';
 import { TrailNode } from './TrailNode';
 
 type RouteRowProps = {
   route: RouteListItem;
+  // O último card da lista dispensa o respiro de baixo.
+  isLast: boolean;
 };
 
-// Card de rota gravada: números em Sora no topo ("12,4 km · 48 min"), nome e
-// data embaixo, e a pilha de fotos à direita. Sem fotos, um mini traçado em
-// terracota ocupa o lugar, como no design.
-export function RouteRow({ route }: RouteRowProps) {
+// Um card é texto à esquerda e a pilha de fotos à direita. Os números vêm
+// como colunas separadas por espaço, não como uma frase com pontinhos --
+// distância e tempo são duas leituras distintas, e assim se alinham entre
+// cards vizinhos.
+export function RouteRow({ route, isLast }: RouteRowProps) {
   const live = route.status === 'active';
   const paused = route.status === 'paused';
   const inProgress = live || paused;
 
   const distance = formatDistance(route.distance_meters);
-  // Só quando houve subida de fato: "↑ 0 m" num card de lista é ruído.
+  // Só quando houve subida de fato: "↑ 0 m" numa linha de lista é ruído.
   const climb = Number(route.elevation_gain_meters) > 0 ? formatElevation(route.elevation_gain_meters) : null;
   // Tempo em movimento quando o GPS já existe; até lá, o de relógio.
   const time = formatDuration(route.duration_seconds) ?? formatElapsed(route.started_at, route.finished_at);
@@ -37,115 +39,119 @@ export function RouteRow({ route }: RouteRowProps) {
   // dizer é que ela está aberta, e desde quando.
   const stateLine = live
     ? route.started_at
-      ? `Gravando desde ${formatTime(route.started_at)}`
-      : 'Gravando'
+      ? `gravando desde ${formatTime(route.started_at)}`
+      : 'gravando'
     : paused
       ? route.started_at
-        ? `Pausada desde ${formatTime(route.started_at)}`
-        : 'Pausada'
+        ? `pausada desde ${formatTime(route.started_at)}`
+        : 'pausada'
       : null;
 
-  const figures = [distance, time, climb ? `↑ ${climb}` : null].filter(Boolean).join(' · ');
-  const subtitle = [route.name ?? 'Rota sem nome', route.event_title, formatDayMonth(routeTimestamp(route))]
-    .filter(Boolean)
-    .join(' · ');
-  const hasPhotos = route.photo_paths.length > 0;
-
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, !isLast && styles.cardSpaced]}>
       <View style={styles.body}>
-        {inProgress ? (
-          <View style={styles.titleLine}>
-            {live ? (
-              <View style={styles.liveMark}>
-                <TrailNode variant="live" />
-              </View>
-            ) : null}
-            <Text style={[styles.headline, live && styles.headlineLive]} numberOfLines={1}>
-              {stateLine}
-            </Text>
-          </View>
-        ) : (
-          <Text style={styles.headline} numberOfLines={1}>
-            {figures || 'Sem dados de GPS'}
+        <View style={styles.titleLine}>
+          {live ? (
+            <View style={styles.liveMark}>
+              <TrailNode variant="live" />
+            </View>
+          ) : null}
+          <Text style={styles.name} numberOfLines={1}>
+            {route.name ?? 'Rota sem nome'}
           </Text>
-        )}
+        </View>
 
-        <Text style={styles.meta} numberOfLines={1}>
-          {subtitle}
-        </Text>
+        {inProgress ? (
+          <Text style={[styles.state, live && styles.stateLive]}>{stateLine}</Text>
+        ) : distance || time ? (
+          <View style={styles.figures}>
+            {distance ? <Text style={styles.figure}>{distance}</Text> : null}
+            {time ? <Text style={styles.figure}>{time}</Text> : null}
+            {climb ? <Text style={styles.figure}>↑ {climb}</Text> : null}
+          </View>
+        ) : null}
+
+        <View style={styles.meta}>
+          <Text style={styles.metaText}>{formatDayMonth(routeTimestamp(route))}</Text>
+          {route.event_title ? (
+            <Text style={[styles.metaText, styles.metaEvent]} numberOfLines={1}>
+              {route.event_title}
+            </Text>
+          ) : null}
+        </View>
       </View>
 
-      {/* Espaço fixo do tamanho da pilha de fotos, com ou sem foto: assim
-          todos os cards da lista têm a mesma altura. */}
-      <View style={styles.aside}>{hasPhotos ? <PhotoStack paths={route.photo_paths} /> : <MiniRoute />}</View>
+      <PhotoStack paths={route.photo_paths} />
     </View>
   );
-}
-
-// Traçado decorativo 40×24 em zigue-zague.
-const MINI_POINTS: [number, number][] = [
-  [1, 18],
-  [9, 9],
-  [16, 15],
-  [24, 4],
-  [32, 12],
-  [39, 6],
-];
-
-function MiniRoute() {
-  return <Squiggle points={MINI_POINTS} width={40} height={24} style={styles.mini} />;
 }
 
 const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
+    gap: 16,
     padding: 14,
     borderRadius: radii.card,
     backgroundColor: palette.surface,
     ...cardShadow,
   },
+  cardSpaced: {
+    marginBottom: 10,
+  },
   body: {
     flex: 1,
     minWidth: 0,
+    gap: 4,
   },
   titleLine: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   // O halo tem 20px de largura, mas o ponto em si é pequeno; compensa-se a
-  // margem para o texto não parecer afastado do sinal.
+  // margem para o nome não parecer afastado do sinal.
   liveMark: {
     marginLeft: -6,
     marginRight: 2,
   },
-  headline: {
+  // Tamanhos alinhados ao EventRow: as duas listas aparecem lado a lado nas
+  // abas do Perfil e não devem parecer componentes de apps diferentes. A
+  // rota ao vivo já se destaca pelo ponto terracota, sem precisar de fonte maior.
+  name: {
     flexShrink: 1,
     fontFamily: fonts.display,
     fontSize: 14.5,
     color: palette.ink,
-    marginBottom: 3,
+  },
+  figures: {
+    flexDirection: 'row',
+    gap: 14,
+  },
+  figure: {
+    fontFamily: fonts.displaySemi,
+    fontSize: 13,
+    color: palette.inkSecondary,
     fontVariant: ['tabular-nums'],
   },
-  headlineLive: {
+  state: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    color: palette.inkSecondary,
+  },
+  stateLive: {
+    fontFamily: fonts.bodySemi,
     color: palette.primary,
   },
   meta: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  metaText: {
     fontFamily: fonts.body,
-    fontSize: 11.5,
-    color: palette.ink,
-    opacity: 0.6,
+    fontSize: 12.5,
+    color: palette.inkInactive,
   },
-  aside: {
-    width: PHOTO_STACK_SIZE,
-    height: PHOTO_STACK_SIZE,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  mini: {
-    opacity: 0.6,
+  metaEvent: {
+    flexShrink: 1,
   },
 });

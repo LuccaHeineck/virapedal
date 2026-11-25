@@ -75,7 +75,7 @@ export default function UserProfile() {
                     accessibilityRole="button"
                     accessibilityLabel="Voltar para a busca"
                   >
-                    <Ionicons name="chevron-back" size={26} color={colors.primary} />
+                    <Ionicons name="chevron-back" size={26} color={palette.inkSecondary} />
                   </TouchableOpacity>
                 ),
               }
