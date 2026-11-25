@@ -292,6 +292,18 @@ AS $$
               AND mine.left_at IS NULL
               AND theirs.left_at IS NULL
         )
+        -- Admins ativos veem quem tem solicitação pendente para o grupo
+        -- deles, para saber quem estão aprovando.
+        OR EXISTS (
+            SELECT 1
+            FROM public.group_join_requests req
+            JOIN public.group_members admin ON admin.group_id = req.group_id
+            WHERE req.requested_by = p_user_id
+              AND req.status = 'pending'
+              AND admin.user_id = auth.uid()
+              AND admin.role = 'admin'
+              AND admin.left_at IS NULL
+        )
       );
 $$;
 
